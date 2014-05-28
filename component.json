@@ -1,0 +1,14 @@
+{
+  "name": "calvad_impute_trucks",
+  "repo": "jmarca/calvad_impute_trucks",
+  "description": "impute trucks at VDS sites using paired VDS and WIM sites",
+  "version": "0.0.1",
+  "keywords": ["calvad", "R", "rstats"],
+  "dependencies": {
+    "jmarca/calvad_rscripts":"*",
+    "jmarca/rstats_couch_utils":"*",
+    "jmarca/rstats_remote_files":"*"
+  },
+  "main":"index.js",
+  "license": "GPLV2"
+}

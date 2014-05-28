@@ -1,0 +1,8 @@
+Package: calvad_impute_trucks
+Title: CalVAD impute trucks at VDS sites
+Version: 0.1
+Authors@R: "James Marca <james@activimetrics.com> [aut, cre]"
+Description: impute trucks at VDS sites using paired VDS and WIM sites
+Depends: R (>= 3.0.3)
+License: GPL V2
+LazyData: true

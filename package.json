@@ -1,0 +1,24 @@
+{
+  "name": "calvad_impute_trucks",
+  "version": "0.0.1",
+  "description": "Impute truck estimates at VDS loop detector sites",
+  "main": "lib/trigger_vds_truck_impute.js",
+  "scripts": {
+    "test": "mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/jmarca/calvad_impute_trucks"
+  },
+  "keywords": [
+    "CalVAD",
+    "truck",
+    "traffic"
+  ],
+  "author": "James E. Marca",
+  "license": "GPL v2",
+  "bugs": {
+    "url": "https://github.com/jmarca/calvad_impute_trucks/issues"
+  },
+  "homepage": "https://github.com/jmarca/calvad_impute_trucks"
+}
