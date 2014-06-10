@@ -20,5 +20,8 @@
   "bugs": {
     "url": "https://github.com/jmarca/calvad_impute_trucks/issues"
   },
-  "homepage": "https://github.com/jmarca/calvad_impute_trucks"
+  "homepage": "https://github.com/jmarca/calvad_impute_trucks",
+  "dependencies": {
+    "calvad_vds_sites": "git://github.com/jmarca/calvad_vds_sites"
+  }
 }
