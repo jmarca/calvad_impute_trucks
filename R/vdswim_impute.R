@@ -12,8 +12,8 @@ con <-  dbConnect(m
                   ,dbname="spatialvds")
 
 
-source('components/jmarca-rstats_couch_utils/couchUtils.R',chdir=TRUE)
-source('components/jmarca-calvad_rscripts/lib/vds_impute.R',chdir=TRUE)
+source('../components/jmarca-rstats_couch_utils/couchUtils.R',chdir=TRUE)
+source('../components/jmarca-calvad_rscripts/lib/vds_impute.R',chdir=TRUE)
 
 ## source('components/jmarca-calvad_rscripts/lib/get.medianed.amelia.vds.R',chdir=TRUE)
 ## source('components/jmarca-calvad_rscripts/lib/amelia_plots_and_diagnostics.R',chdir=TRUE)
