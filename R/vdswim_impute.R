@@ -14,15 +14,17 @@ con <-  dbConnect(m
 
 source('../components/jmarca-rstats_couch_utils/couchUtils.R',chdir=TRUE)
 source('../components/jmarca-calvad_rscripts/lib/vds_impute.R',chdir=TRUE)
-
-## source('components/jmarca-calvad_rscripts/lib/get.medianed.amelia.vds.R',chdir=TRUE)
-## source('components/jmarca-calvad_rscripts/lib/amelia_plots_and_diagnostics.R',chdir=TRUE)
+source('impute_vds_site.R')
 ## source('components/jmarca-calvad_rscripts/lib/just.amelia.call.R',chdir=TRUE)
 ## source('components/jmarca-calvad_rscripts/lib/wim.loading.functions.R',chdir=TRUE)
 ## source("components/jmarca-calvad_rscripts/lib/vds.processing.functions.R",chdir=TRUE)
 
 
 output.path <- Sys.getenv(c('CALVAD_IMPUTE_PATH'))[1]
+if(is.null(output.path)){
+  print('assign a output.path to the CALVAD_IMPUTE_PATH environment variable')
+  exit(1)
+}
 
 localcouch = Sys.getenv(c('CALVAD_LOCAL_COUCH'))[1]
 if(is.null(localcouch)){
@@ -32,16 +34,8 @@ if(is.null(localcouch)){
 }
 
 
-
-
-district = Sys.getenv(c('CALVAD_DISTRICT'))[1]
-if(is.null(district)){
-  print('assign a district to the RDISTRICT environment variable')
-  exit(1)
-}
-
 vds.id = Sys.getenv(c('CALVAD_VDSID'))[1]
-if(is.null(vdsfile)){
+if(is.null(vds.id)){
   print('assign a file to process to the FILE environment variable')
   exit(1)
 }
@@ -67,10 +61,5 @@ if(is.null(maxiter)){
 ## I don't think I use this anywhere
 ## wim.vds.pairs <- get.list.closest.wim.pairs()
 
-file.names <- strsplit(vdsfile,split="/")
-file.names <- file.names[[1]]
-fname <-  strsplit(file.names[length(file.names)],"\\.")[[1]][1]
-vds.id <-  get.vdsid.from.filename(fname)
 
-
-##impute.vds.site(vds.id,year,vdsfile=vdsfile,district=district)
+impute.vds.site(vds.id,year,path=pems.root,maxiter=maxiter)

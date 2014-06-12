@@ -1,8 +1,22 @@
+source('../components/jmarca-calvad_rscripts/lib/amelia_plots_and_diagnostics.R',chdir=TRUE)
+source('../components/jmarca-calvad_rscripts/lib/get.medianed.amelia.vds.R',chdir=TRUE)
+source('../components/jmarca-calvad_rscripts/lib/wim.loading.functions.R',chdir=TRUE)
+
+
 ## pass in the vdsid and the year
 
-impute.vds.site <- function(vdsid,year,path,district,maxiter){
+impute.vds.site <- function(vdsid,year,path,maxiter){
 
     print(paste('processing ',paste(vdsid,collapse=', ')))
+
+    wim.ids <- get.list.neighbor.wim.sites(vdsid)
+    ## if no neighbors, die now
+    if(dim(wim.ids)[1]<1){
+        print('no neighbors?')
+        print(paste(wim.ids,sep=' '))
+        quit(status=9)
+    }
+
     ## load the vds data
     df.vds.zoo <- get.and.plot.vds.amelia(pair=vdsid,year,doplots=FALSE,remote=FALSE,path=path)
 
@@ -27,10 +41,6 @@ impute.vds.site <- function(vdsid,year,path,district,maxiter){
     ## loading WIM data paired with VDS data from WIM neighbor sites
 ######################
 
-    ## wim.ids <- get.list.neighbor.wim.sites(vdsid)
-    ## widen the net
-    wim.ids <- ##get.list.district.neighbor.wim.sites(vdsid)
-        get.list.neighbor.wim.sites(vdsid)
 
     bigdata <- load.wim.pair.data(wim.ids,vds.nvars=vds.nvars,lanes=lanes)
 
@@ -91,6 +101,8 @@ impute.vds.site <- function(vdsid,year,path,district,maxiter){
 
     ## run amelia to impute missing (trucks)
     print('all set to impute')
+    quit(10)
+    print('buh bye')
     big.amelia <- fill.truck.gaps(bigdata,maxiter=maxiter)
 
 
