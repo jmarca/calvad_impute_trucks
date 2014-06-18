@@ -36,34 +36,21 @@ impute.vds.site <- function(vdsid,year,path,maxiter){
     vds.names <- names(df.vds)
     vds.nvars <- grep( pattern="^n(l|r)\\d+",x=vds.names,perl=TRUE,value=TRUE)
 
-    lanes = length(vds.nvars)
 #####################
     ## loading WIM data paired with VDS data from WIM neighbor sites
 ######################
 
 
-    bigdata <- load.wim.pair.data(wim.ids,vds.nvars=vds.nvars,lanes=lanes)
+    bigdata <- load.wim.pair.data(wim.ids,vds.nvars=vds.nvars,year=year)
 
-  ## iterate a bit here
-    if(dim(bigdata)[1] < 100){
-        while(dim(bigdata)[1] < 100 ){
-            print('loop')
-            more.lanes <- wim.ids$lanes == wim.ids$lanes[1]
-            ## drop to the next lane size
-            wim.ids <- wim.ids[!more.lanes,]
-            if(dim(wim.ids)[1]>0){
-                bigdata <- load.wim.pair.data(wim.ids,vds.nvars=vds.nvars,lanes=lanes)
-            }
-        }
-    }
 
-    print('concatenating merged and to-do data sets')
     if(dim(bigdata)[1] < 100){
         print('bigdata looking pretty empty')
-        couch.set.state(year,vds.id,list('truck_imputation_failed'=paste(dim(bigdata)[1], 'records in wim neighbor sites')),local=localcouch)
+
+##couch.set.state(year,vds.id,list('truck_imputation_failed'=paste(dim(bigdata)[1], 'records in wim neighbor sites')),local=localcouch)
         stop()
     }
-    ## bigdata <- concatenate.two.sites(bigdata,aout.agg,maximp=keepimp)
+
     wimsites.names <-  names(bigdata)
     vds.names <- names(df.vds)
     miss.names.wim <- setdiff(wimsites.names,vds.names)
