@@ -23,11 +23,11 @@
   "homepage": "https://github.com/jmarca/calvad_impute_trucks",
   "dependencies": {
     "calvad_vds_sites": "git://github.com/jmarca/calvad_vds_sites",
-    "lodash": "~2.4.1",
-    "queue-async": "^1.0.7"
+    "lodash": "",
+    "queue-async": ""
   },
   "devDependencies": {
-    "should": "~4.0.4",
-    "config_okay": "0.0.2"
+    "should": "",
+    "config_okay": ""
   }
 }
