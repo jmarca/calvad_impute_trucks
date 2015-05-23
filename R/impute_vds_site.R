@@ -3,8 +3,22 @@ source('../components/jmarca-calvad_rscripts/lib/get.medianed.amelia.vds.R',chdi
 source('../components/jmarca-calvad_rscripts/lib/wim.loading.functions.R',chdir=TRUE)
 
 
-## pass in the vdsid and the year
 
+##' Impute trucks for a VDS site
+##'
+##' pass in a VDS id, a year, and a path to stored data.  The
+##' appropriate neighboring WIM-VDS pairs will be loaded for this VDS
+##' site, and will be used to impute the most likely truck variables
+##' given the VDS site's observed volumes and occupancies.
+##'
+##' @title impute.vds.site
+##' @param vdsid the VDS id
+##' @param year
+##' @param path the root for the local filesystem data
+##' @param maxiter maximum iterations for Amelia run
+##' @return nothing.  A big quit() from R when complete Run this for
+##' the side effects of generating imputed trucks.
+##' @author James E. Marca
 impute.vds.site <- function(vdsid,year,path,maxiter){
 
     print(paste('processing ',paste(vdsid,collapse=', ')))
