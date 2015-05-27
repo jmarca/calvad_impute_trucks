@@ -69,6 +69,8 @@ describe('query wim vds distances',function(){
                 len.should.equal(85)
                 return null
             })
+            // var firstvds = Object.keys(r)[0]
+            // console.log(r[firstvds].slice(0,10))
             return done()
         })
     })
