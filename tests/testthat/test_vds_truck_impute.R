@@ -1,26 +1,59 @@
 config <- rcouchutils::get.config(Sys.getenv('RCOUCHUTILS_TEST_CONFIG'))
-parts <- c('vds','impute','calls')
+parts <- c('vds','wim','impute','calls')
 rcouchutils::couch.makedb(parts)
+path <- './files'
+year <- 2012
 
-test_that("prelude code to vds impute trucks works okay",{
+file <- './files/wim.51.E.vdsid.318383.2012.paired.RData'
+calvadmergepairs::couch.put.merged.pair(trackingdb=parts,
+                      vds.id=318383,
+                      file=file)
+file <- './files/wim.52.W.vdsid.313822.2012.paired.RData'
+calvadmergepairs::couch.put.merged.pair(trackingdb=parts,
+                      vds.id=313822,
+                      file=file)
 
-    ## impute.vds.site <- function(vdsid,wim_sites,year,path,maxiter,trackingdb){
 
-    print(paste('processing ',paste(vdsid,collapse=', ')))
+test_that(
+    "can impute trucks files",{
+    wim.pairs <- list()
+    wim.pairs[[1]] <- list(vds_id=313822,wim_site=52,direction='W')
+    wim.pairs[[2]] <- list(vds_id=318383,wim_site=51,direction='E')
+    bigdata <- calvadmergepairs::load.wim.pair.data(wim.pairs=wim.pairs,
+                                  vds.nvars=c('nl1','nr3','nr2','nr1'),
+                                  year=2012,
+                                  db=parts
+                                  )
 
+    expect_that(bigdata,is_a('data.frame'))
 
-    wim_sites <- c(1,2,3,4,5,6,7) ## blah blah get it right
+    expect_that(dim(bigdata),equals(c(10544,49)))
+    expect_that(sort(unique(bigdata$vds_id)),equals(c(313822,318383)))
 
+## a sample output from distance table
+##  { vds_id: '311903',
+##     site_no: 51,
+##     freeway: 50,
+##     direction: 'east',
+##     dist: 4564.10931177 },
+##   { vds_id: '311903',
+##     site_no: 52,
+##     freeway: 50,
+##     direction: 'west',
+##     dist: 4564.10931177 },
+    year <- 2012
+
+    vds_id <- 311903
     ## load the vds data
     print(paste('loading',vds.id,'from',path))
     df.vds <- get.and.plot.vds.amelia(
-                  pair=vds.id,
+                  pair=vds_id,
                   year=year,
                   doplots=FALSE,
                   remote=FALSE,
-                  path=path,
+                  path='./files',
                   force.plot=FALSE,
-                  trackingdb=trackingdb)
+                  trackingdb=parts)
 
     ## so that I can pluck out just this site's data at the end of imputation
     df.vds[,'vds_id'] <- vdsid
@@ -32,17 +65,6 @@ test_that("prelude code to vds impute trucks works okay",{
 #####################
     ## loading WIM data paired with VDS data from WIM neighbor sites
 ######################
-
-
-    bigdata <- load.wim.pair.data(wim.ids,vds.nvars=vds.nvars,year=year)
-
-
-    if(dim(bigdata)[1] < 100){
-        print('bigdata looking pretty empty')
-
-##couch.set.state(year,vds.id,list('truck_imputation_failed'=paste(dim(bigdata)[1], 'records in wim neighbor sites')),local=localcouch)
-        stop()
-    }
 
     wimsites.names <-  names(bigdata)
     vds.names <- names(df.vds)
@@ -56,7 +78,7 @@ test_that("prelude code to vds impute trucks works okay",{
     ## data and the vds does not
     df.vds[,miss.names.wim] <- NA
 
-    ## merge into bigdata
+    ## merge vds into bigdata
     bigdata <- rbind(bigdata,df.vds)
     miss.names.vds <- union(miss.names.vds,c('vds_id'))
     i.hate.r <- c(miss.names.vds,'nr1') ## need a dummy index or R will simplify
