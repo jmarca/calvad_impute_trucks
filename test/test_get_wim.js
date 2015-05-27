@@ -2,6 +2,7 @@
 
 var should = require('should')
 var wim_imputed = require('../lib/wim_imputed.js')
+var wim_merged = require('../lib/wim_merged.js')
 var path    = require('path')
 var rootdir = path.normalize(__dirname)
 
@@ -29,6 +30,20 @@ describe('get finished imputed WIM sites',function(){
                         should.not.exist(e)
                         should.exist(sites)
                         sites.should.have.lengthOf(140)
+                        return done()
+                    })
+    })
+
+})
+
+describe('get merged WIM sites',function(){
+    it('should get the WIM sites that are merged with vds sites',function(done){
+        config.year =2012
+        wim_merged(config
+		    ,function(e,sites){
+                        should.not.exist(e)
+                        should.exist(sites)
+                        sites.should.have.lengthOf(85)
                         return done()
                     })
     })
