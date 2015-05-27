@@ -10,35 +10,36 @@
 ##' @param year
 ##' @param path the root for the local filesystem data
 ##' @param maxiter maximum iterations for Amelia run
+##' @param trackingdb The couchdb tracking db.  Any issues will be
+##' noted here
 ##' @return nothing.  A big quit() from R when complete Run this for
 ##' the side effects of generating imputed trucks.
 ##' @author James E. Marca
-impute.vds.site <- function(vdsid,year,path,maxiter){
+impute.vds.site <- function(vdsid,wim_sites,year,path,maxiter,trackingdb){
 
     print(paste('processing ',paste(vdsid,collapse=', ')))
 
-    wim.ids <- get.list.neighbor.wim.sites(vdsid)
+
     ## if no neighbors, die now
-    if(dim(wim.ids)[1]<1){
+    if(length(wim_sites)<1){
         print('no neighbors?')
-        print(paste(wim.ids,sep=' '))
+        print(paste(wim_sites,sep=' '))
         quit(status=9)
     }
 
     ## load the vds data
-    df.vds.zoo <- get.and.plot.vds.amelia(pair=vdsid,year,doplots=FALSE,remote=FALSE,path=path)
+    print(paste('loading',vds.id,'from',path))
+    df.vds <- get.and.plot.vds.amelia(
+                  pair=vds.id,
+                  year=year,
+                  doplots=FALSE,
+                  remote=FALSE,
+                  path=path,
+                  force.plot=FALSE,
+                  trackingdb=trackingdb)
 
-    if(is.null(df.vds.zoo)){
-        stop()
-    }
-
-    ## standard unzoo incantation
-    df.vds <- unzoo.incantation(df.vds.zoo)
-    rm(df.vds.zoo)
     ## so that I can pluck out just this site's data at the end of imputation
     df.vds[,'vds_id'] <- vdsid
-    ## probably not necessary yet
-    ## gc()
 
     ## pick off the lane names so as to drop irrelevant lanes in the loop below
     vds.names <- names(df.vds)
@@ -86,6 +87,17 @@ impute.vds.site <- function(vdsid,year,path,maxiter){
     rm(df.vds)
     gc()
 
+    ## improve imputation?
+    ## add volume times occupancy artificial variable now
+
+    occ.pattern <- "^o(l|r)\\d$"
+    occ.vars <-  grep( pattern=occ.pattern,x=names(bigdata),perl=TRUE,value=TRUE)
+    vol.pattern <- "^n(l|r)\\d$"
+    vol.vars <-  grep( pattern=vol.pattern,x=names(bigdata),perl=TRUE,value=TRUE)
+
+    names_o_n <- paste(occ.vars,'times',vol.vars,sep='_')
+    bigdata[,names_o_n] <- bigdata[,occ.vars]*(bigdata[,vol.vars])
+
     ## bugfix.  vds amelia runs might have been done with improper
     ## limits on occ.  Very old runs only, but need to fix here
     occ.pattern <- "^o(l|r)\\d$"
@@ -96,10 +108,12 @@ impute.vds.site <- function(vdsid,year,path,maxiter){
 
     ## run amelia to impute missing (trucks)
     print('all set to impute')
-    quit(10)
-    print('buh bye')
+
     big.amelia <- fill.truck.gaps(bigdata,maxiter=maxiter)
 
+    ## testing point
+
+    ##################################################
 
     ## I used to save here, but now that this is distributed, I should
     ## probably convert to csv and push to psql sooner

@@ -1,7 +1,7 @@
 /* global require console process describe it */
 
 var should = require('should')
-var create_dist_table = require('../lib/create_dist_table.js')
+var create_dist_table = require('../lib/create_vds_wim_dist_table.js')
 var path    = require('path')
 var rootdir = path.normalize(__dirname)
 
@@ -10,6 +10,7 @@ var config_file = rootdir+'/../test.config.json'
 var config={}
 var config_okay = require('config_okay')
 var wim_imputed = require('../lib/wim_imputed.js')
+var wim_merged = require('../lib/wim_merged.js')
 var vds_imputed = require('../lib/vds_imputed.js')
 var extract_couch_docs = require('../lib/extract_couch_docs.js')
 var queue = require('queue-async')
@@ -27,9 +28,11 @@ before(function(done){
         var q = queue()
         var opts =_.extend({'year':2012},c)
         q.defer(wim_imputed,opts)
+        q.defer(wim_merged,opts)
         q.defer(vds_imputed,opts)
-        q.await(function(e,w,v){
-            config.wim_sites = w
+        q.await(function(e,w_i,w_m,v){
+            config.wim_imputed_sites = w_i
+            config.wim_merged_sites = w_m
             config.vds_sites = v
             return done()
 
@@ -41,43 +44,32 @@ before(function(done){
 
 describe('query wim vds distances',function(){
     it('should get distance table for wim vds',function(done){
+        config.wim_sites = config.wim_imputed_sites
         create_dist_table(config,function(e,r){
             var numrecords = Object.keys(r).length
-            numrecords.should.equal(117)
-            var check_queue = queue(5)
-            var toolong = 0
-            Object.keys(r).forEach(function(wim_site){
-                // there is at least one site with distance 25,000+
-                // that was used as a pair in 2009
-                if(wim_site,r[wim_site][0].dist > 26000){
-                    toolong++
-                    check_queue.defer(function(cb){
-                        var opts = {
-                            'doc':wim_site
-                            ,'year':2009
-                            ,'state':'paired'
-                            ,'record':r[wim_site][0]
-                        }
-                        _.assign(opts,config.couchdb)
-                        couch_check(
-                            opts
-                            ,function(err,state){
-                                should.not.exist(err)
-                                should.exist(state)
-                                state.should.equal('none')
-                                return cb()
-
-                            })
-                        return null
-                    })
-                }
+            numrecords.should.equal(5865)
+            Object.keys(r).forEach(function(vdsid){
+                var len = r[vdsid].length
+                len.should.equal(140 - 9)  // in 2012, 140 wim sites
+                                           // imputed fine, but 9 are
+                                           // above 800 series
+                                           // (pre-pass type sites)
                 return null
             })
-            check_queue.await(function(e,r){
-                toolong.should.equal(31)
-                return done(e)
+            return done()
+        })
+    })
+    it('should get distance table for wim merged, vds',function(done){
+        config.wim_sites = config.wim_merged_sites
+        create_dist_table(config,function(e,r){
+            var numrecords = Object.keys(r).length
+            numrecords.should.equal(5865)
+            Object.keys(r).forEach(function(vdsid){
+                var len = r[vdsid].length
+                len.should.equal(85)
+                return null
             })
-
+            return done()
         })
     })
 

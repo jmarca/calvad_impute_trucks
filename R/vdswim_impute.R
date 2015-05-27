@@ -1,25 +1,77 @@
-library('R.utils')
+## need node_modules directories
+dot_is <- getwd()
+node_paths <- dir(dot_is,pattern='\\.Rlibs',
+                  full.names=TRUE,recursive=TRUE,
+                  ignore.case=TRUE,include.dirs=TRUE,
+                  all.files = TRUE)
+path <- normalizePath(node_paths, winslash = "/", mustWork = FALSE)
+lib_paths <- .libPaths()
+.libPaths(c(path, lib_paths))
+
+print(.libPaths())
+
+## need env for test file
+config_file <- Sys.getenv('R_CONFIG')
+
+if(config_file ==  ''){
+    config_file <- 'config.json'
+}
+print(paste ('using config file =',config_file))
+config <- rcouchutils::get.config(config_file)
+
+## pass it the raw data details, and either the raw data will get
+## loaded and parsed and saved as a dataframe, or else the existing
+## dataframe will get loaded.  In either case, the plots will get made
+## and saved to couchdb
+
+
 library('RPostgreSQL')
 m <- dbDriver("PostgreSQL")
-
-## requires environment variables be set externally
-psqlenv = Sys.getenv(c("PSQL_HOST", "PSQL_USER", "PSQL_PASS"))
-
 con <-  dbConnect(m
-                  ,user=psqlenv[2]
-                  ,password=psqlenv[3]
-                  ,host=psqlenv[1]
-                  ,dbname="spatialvds")
+                  ,user=config$postgresql$auth$username
+                  ,host=config$postgresql$host
+                  ,dbname=config$postgresql$db)
 
+district = Sys.getenv(c('RDISTRICT'))[1]
 
-source('../components/jmarca-rstats_couch_utils/couchUtils.R',chdir=TRUE)
-source('../components/jmarca-calvad_rscripts/lib/vds_impute.R',chdir=TRUE)
-source('impute_vds_site.R')
-## source('components/jmarca-calvad_rscripts/lib/just.amelia.call.R',chdir=TRUE)
-## source('components/jmarca-calvad_rscripts/lib/wim.loading.functions.R',chdir=TRUE)
-## source("components/jmarca-calvad_rscripts/lib/vds.processing.functions.R",chdir=TRUE)
+if('' == district){
+  print('assign a district to the RDISTRICT environment variable')
+  exit(1)
+}
 
+file = Sys.getenv(c('FILE'))[1]
+if('' == file){
+  print('assign a file to process to the FILE environment variable')
+  exit(1)
+}
 
+year = as.numeric(Sys.getenv(c('RYEAR'))[1])
+if('' == year){
+  print('assign the year to process to the RYEAR environment variable')
+  exit(1)
+}
+
+district.path=paste(district,'/',sep='')
+
+file.names <- strsplit(file,split="/")
+file.names <- file.names[[1]]
+fname <-  strsplit(file.names[length(file.names)],"\\.")[[1]][1]
+vds.id <-  calvadrscripts::get.vdsid.from.filename(fname)
+pems.root = Sys.getenv(c('CALVAD_PEMS_ROOT'))[1]
+path = paste(pems.root,district,sep='')
+file <- paste(path,file,sep='/')
+print(file)
+goodfactor <-   3.5
+seconds = 120
+## using maxiter must be a number, not string
+## so the env var is irritating.  Hard code at 20 for now
+maxiter = Sys.getenv(c('CALVAD_VDS_IMPUTE_MAXITER'))[1]
+if('' == maxiter){
+    maxiter=20
+}
+print(maxiter)
+
+## fix everything below here
 output.path <- Sys.getenv(c('CALVAD_IMPUTE_PATH'))[1]
 if(is.null(output.path)){
   print('assign a output.path to the CALVAD_IMPUTE_PATH environment variable')
