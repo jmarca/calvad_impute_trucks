@@ -1,4 +1,4 @@
-Package: calvad_impute_trucks
+Package: calvadimputetrucks
 Title: CalVAD impute trucks at VDS sites
 Version: 0.1
 Authors@R: "James Marca <james@activimetrics.com> [aut, cre]"

@@ -29,8 +29,8 @@ impute.vds.site <- function(vdsid,wim_sites,year,path,maxiter,trackingdb){
 
     ## load the vds data
     print(paste('loading',vds.id,'from',path))
-    df.vds <- get.and.plot.vds.amelia(
-                  pair=vds.id,
+    df.vds <- calvadrscripts::get.and.plot.vds.amelia(
+                  pair=vds_id,
                   year=year,
                   doplots=FALSE,
                   remote=FALSE,
@@ -39,7 +39,7 @@ impute.vds.site <- function(vdsid,wim_sites,year,path,maxiter,trackingdb){
                   trackingdb=trackingdb)
 
     ## so that I can pluck out just this site's data at the end of imputation
-    df.vds[,'vds_id'] <- vdsid
+    df.vds[,'vds_id'] <- vds_id
 
     ## pick off the lane names so as to drop irrelevant lanes in the loop below
     vds.names <- names(df.vds)
@@ -48,15 +48,15 @@ impute.vds.site <- function(vdsid,wim_sites,year,path,maxiter,trackingdb){
 #####################
     ## loading WIM data paired with VDS data from WIM neighbor sites
 ######################
-
-
-    bigdata <- load.wim.pair.data(wim.ids,vds.nvars=vds.nvars,year=year)
+    bigdata <- calvadmergepairs::load.wim.pair.data(wim.pairs=wim.pairs,
+                                  vds.nvars=vds.nvars,
+                                  year=year,
+                                  db=trackingdb
+                                  )
 
 
     if(dim(bigdata)[1] < 100){
         print('bigdata looking pretty empty')
-
-##couch.set.state(year,vds.id,list('truck_imputation_failed'=paste(dim(bigdata)[1], 'records in wim neighbor sites')),local=localcouch)
         stop()
     }
 
@@ -72,20 +72,18 @@ impute.vds.site <- function(vdsid,wim_sites,year,path,maxiter,trackingdb){
     ## data and the vds does not
     df.vds[,miss.names.wim] <- NA
 
-    ## merge into bigdata
+    ## merge vds into bigdata
     bigdata <- rbind(bigdata,df.vds)
     miss.names.vds <- union(miss.names.vds,c('vds_id'))
     i.hate.r <- c(miss.names.vds,'nr1') ## need a dummy index or R will simplify
     holding.pattern <- bigdata[,i.hate.r]
 
-    this.vds <- bigdata['vds_id'] == vdsid
-    this.vds <- !is.na(this.vds)  ## lordy I hate when NA isn't falsey
+    this.vds <- bigdata['vds_id'] == vds_id
+    ## this.vds <- !is.na(this.vds)  ## lordy I hate when NA isn't falsey
 
     for(i in miss.names.vds){
         bigdata[,i] <- NULL
     }
-    rm(df.vds)
-    gc()
 
     ## improve imputation?
     ## add volume times occupancy artificial variable now
@@ -111,13 +109,6 @@ impute.vds.site <- function(vdsid,wim_sites,year,path,maxiter,trackingdb){
 
     big.amelia <- fill.truck.gaps(bigdata,maxiter=maxiter)
 
-    ## testing point
-
-    ##################################################
-
-    ## I used to save here, but now that this is distributed, I should
-    ## probably convert to csv and push to psql sooner
-
     ## write out the imputation chains information to couchdb for later analysis
     ## and also generate plots as attachments
 
@@ -135,6 +126,8 @@ impute.vds.site <- function(vdsid,wim_sites,year,path,maxiter,trackingdb){
     var.list <- names.munging(varnames)
     keep.names <- setdiff(varnames,var.list$exclude.as.id.vars)
     keep.names <- union(keep.names,c('ts','tod','day','vds_id'))
+    keep.names <- setdiff(keep.names,names_o_n)
+
     df.amelia.c <- df.amelia.c[,keep.names]
 
     if(length(big.amelia$imputations) > 1){
@@ -148,6 +141,10 @@ impute.vds.site <- function(vdsid,wim_sites,year,path,maxiter,trackingdb){
     ## get rid of stray dots in variable names
     db.legal.names  <- gsub("\\.", "_", names(df.amelia.c))
     names(df.amelia.c) <- db.legal.names
+
+    ## compress amelia output into medians, save that.  Much smaller
+
+    df.agg.amelia <- calvadrscripts::wim.medianed.aggregate.df(morebig.amelia)
 
     ## unsure about this.  seems like lots of NA values could likely be produced.
     df.amelia.c.l <- transpose.lanes.to.rows(df.amelia.c)

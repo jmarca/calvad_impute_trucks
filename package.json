@@ -25,11 +25,11 @@
       "calvad_vds_sites": "jmarca/calvad_vds_sites",
       "calvad_wim_sites": "jmarca/calvad_wim_sites",
       "calvad_rscripts": "jmarca/calvad_rscripts",
-      "calvad_merge_pairs": "jmarca/calvad_merge_pairs",
+      "calvad_merge_pairs": "git+ssh://metis.gitolite/calvad_merge_pairs",
       "rcouchutils":"jmarca/rstats_couch_utils",
       "configr":"jmarca/configr",
       "config_okay": "",
-      "couch_check_state": "git://github.com/jmarca/couch_check_state",
+      "couch_check_state": "jmarca/couch_check_state",
       "lodash": "",
       "pg": "",
       "queue-async": ""

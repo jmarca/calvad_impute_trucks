@@ -84,24 +84,36 @@ fill.truck.gaps <- function(df
   ##          emburn=c(2,maxiter),
   ##          bounds = pos.bds, max.resample=10,empri = 0.05 *nrow(df)
   ##          )
-  ## this one is going for speed
-  df$toddow <- 24 * df$day + df$tod
 
-  exclude.as.id.vars <- c('tod','day',exclude.as.id.vars)
-    df.amelia <-
+    ## this one is going for speed
+  ## df$toddow <- 24 * df$day + df$tod
+  ## exclude.as.id.vars <- c('tod','day',exclude.as.id.vars)
+  ##   df.amelia <-
+  ##   Amelia::amelia(df,idvars=exclude.as.id.vars,
+  ##          ts="toddow",
+  ##          splinetime=6,
+  ##          #lags =count.vars,
+  ##          #leads=count.vars,
+  ##          sqrts=count.vars,
+  ##          #cs="day",
+  ##          #intercs=TRUE,
+  ##          emburn=c(2,maxiter),
+  ##          bounds = pos.bds, max.resample=10,empri = 0.05 *nrow(df)
+  ##          ##,m=1 ## desperate measures!  set to limit the imputations
+  ##          )
+
+ df.amelia <-
     Amelia::amelia(df,idvars=exclude.as.id.vars,
-           ts="toddow",
+           ts="tod",
            splinetime=6,
-           #lags =count.vars,
-           #leads=count.vars,
+#           lags =count.vars,leads=count.vars,
            sqrts=count.vars,
-           #cs="day",
-           #intercs=TRUE,
+           cs="day",
+           intercs=TRUE,
            emburn=c(2,maxiter),
-           bounds = pos.bds, max.resample=10,empri = 0.05 *nrow(df)
-           ##,m=1 ## desperate measures!  set to limit the imputations
-           )
-  df.amelia
+           bounds = pos.bds, max.resample=10,empri = 0.05 *nrow(df))
+
+    df.amelia
 }
 
 

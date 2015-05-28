@@ -3,6 +3,7 @@ parts <- c('vds','wim','impute','calls')
 rcouchutils::couch.makedb(parts)
 path <- './files'
 year <- 2012
+maxiter <- 200
 
 file <- './files/wim.51.E.vdsid.318383.2012.paired.RData'
 calvadmergepairs::couch.put.merged.pair(trackingdb=parts,
@@ -46,17 +47,17 @@ test_that(
     vds_id <- 311903
     ## load the vds data
     print(paste('loading',vds.id,'from',path))
-    df.vds <- get.and.plot.vds.amelia(
+    df.vds <- calvadrscripts::get.and.plot.vds.amelia(
                   pair=vds_id,
                   year=year,
                   doplots=FALSE,
                   remote=FALSE,
-                  path='./files',
+                  path=path,
                   force.plot=FALSE,
                   trackingdb=parts)
 
     ## so that I can pluck out just this site's data at the end of imputation
-    df.vds[,'vds_id'] <- vdsid
+    df.vds[,'vds_id'] <- vds_id
 
     ## pick off the lane names so as to drop irrelevant lanes in the loop below
     vds.names <- names(df.vds)
@@ -65,6 +66,17 @@ test_that(
 #####################
     ## loading WIM data paired with VDS data from WIM neighbor sites
 ######################
+    bigdata <- calvadmergepairs::load.wim.pair.data(wim.pairs=wim.pairs,
+                                  vds.nvars=vds.nvars,
+                                  year=2012,
+                                  db=parts
+                                  )
+
+    expect_that(bigdata,is_a('data.frame'))
+
+    expect_that(dim(bigdata),equals(c(10544,47))) ## missing one lane from earlier
+    expect_that(sort(unique(bigdata$vds_id)),equals(c(313822,318383)))
+
 
     wimsites.names <-  names(bigdata)
     vds.names <- names(df.vds)
@@ -84,14 +96,12 @@ test_that(
     i.hate.r <- c(miss.names.vds,'nr1') ## need a dummy index or R will simplify
     holding.pattern <- bigdata[,i.hate.r]
 
-    this.vds <- bigdata['vds_id'] == vdsid
-    this.vds <- !is.na(this.vds)  ## lordy I hate when NA isn't falsey
+    this.vds <- bigdata['vds_id'] == vds_id
+    ## this.vds <- !is.na(this.vds)  ## lordy I hate when NA isn't falsey
 
     for(i in miss.names.vds){
         bigdata[,i] <- NULL
     }
-    rm(df.vds)
-    gc()
 
     ## improve imputation?
     ## add volume times occupancy artificial variable now
@@ -117,97 +127,28 @@ test_that(
 
     big.amelia <- fill.truck.gaps(bigdata,maxiter=maxiter)
 
-    })
+    df.amelia.c <- big.amelia$imputations[[1]][this.vds,]
+    df.amelia.c[,miss.names.vds] <- holding.pattern[this.vds,miss.names.vds]
 
-    file  <- './files/1211682_ML_2012.df.2012.RData'
-    fname <- '1211682_ML_2012'
-    vds.id <- 1211682
-    year <- 2012
-    seconds <- 120
-    path <- '.'
-    result <- self.agg.impute.VDS.site.no.plots(fname=fname,
-                                                f=file,
-                                                path=path,
-                                                year=year,
-                                                seconds=seconds,
-                                                goodfactor=3.5,
-                                                maxiter=20,
-                                                con=con,
-                                                trackingdb=parts)
+    ## limit to what I did impute only
+    varnames <- names(df.amelia.c)
+    var.list <- names.munging(varnames)
+    keep.names <- setdiff(varnames,var.list$exclude.as.id.vars)
+    keep.names <- union(keep.names,c('ts','tod','day','vds_id'))
+    keep.names <- setdiff(keep.names,names_o_n)
 
+    df.amelia.c <- df.amelia.c[,keep.names]
 
-    expect_that(result,equals(1))
-    datfile <- dir(path='.',pattern='vds_hour_agg',full.names=TRUE,recursive=TRUE)
-    expect_that(datfile[1],matches(paste('vds_hour_agg',vds.id,sep='.')))
-
-    datfile <- dir(path='.',
-                   pattern=paste(vds.id,'.*imputed.RData$',sep=''),
-                   full.names=TRUE,recursive=TRUE)
-    expect_that(datfile[1],matches(paste(vds.id,
-                                         '_ML_',
-                                         year,'.',
-                                         seconds,'.',
-                                         'imputed.RData',
-                                         sep='')))
-
-    saved.state <- rcouchutils::couch.check.state(
-        year=year,
-        id=vds.id,
-        'vdsraw_chain_lengths',
-        db=parts)
-    expect_that(saved.state,is_a('numeric'))
-    expect_that(saved.state,
-                equals(c(3,3,3,3,3)))
+    if(length(big.amelia$imputations) > 1){
+        for(i in 2:length(big.amelia$imputations)){
+            temp <- big.amelia$imputations[[i]][this.vds,]
+            temp[,miss.names.vds] <- holding.pattern[this.vds,miss.names.vds]
+            temp <- temp[,keep.names]
+            df.amelia.c <- rbind(df.amelia.c,temp)
+        }
+    }
+    ## get rid of stray dots in variable names
+    db.legal.names  <- gsub("\\.", "_", names(df.amelia.c))
+    names(df.amelia.c) <- db.legal.names
 
 })
-
-unlink('./files/1073210_ML_2012.120.imputed.RData')
-test_that("ignoring speed in imputation works okay",{
-
-    file  <- './files/1073210_ML_2012.df.2012.RData'
-    fname <- '1073210_ML_2012'
-    vds.id <- 1073210
-    year <- 2012
-    seconds <- 120
-    path <- '.'
-    result <- self.agg.impute.VDS.site.no.plots(fname=fname,
-                                                f=file,
-                                                path=path,
-                                                year=year,
-                                                seconds=seconds,
-                                                goodfactor=3.5,
-                                                maxiter=20,
-                                                con=con,
-                                                trackingdb=parts)
-
-
-    expect_that(result,equals(1))
-    datfile <- dir(path='.',pattern='vds_hour_agg',full.names=TRUE,recursive=TRUE)
-    expect_that(datfile[1],matches(paste('vds_hour_agg',vds.id,sep='.')))
-
-    datfile <- dir(path='.',
-                   pattern=paste(vds.id,'.*imputed.RData$',sep=''),
-                   full.names=TRUE,recursive=TRUE)
-    expect_that(datfile[1],matches(paste(vds.id,
-                                         '_ML_',
-                                         year,'.',
-                                         seconds,'.',
-                                         'imputed.RData',
-                                         sep='')))
-
-    saved.state <- rcouchutils::couch.check.state(
-        year=year,
-        id=vds.id,
-        'vdsraw_chain_lengths',
-        db=parts)
-    expect_that(saved.state,is_a('numeric'))
-    expect_that(saved.state,
-                equals(c(5,5,5,5,5)))
-
-})
-
-
-rcouchutils::couch.deletedb(parts)
-unlink('./vds_hour_agg.1211682.2012.dat')
-unlink('./files/1073210_ML_2012.120.imputed.RData')
-unlink('./vds_hour_agg.1073210.2012.dat')

@@ -1,0 +1,15 @@
+RData$
+.*cookies\.txt$
+node_modules.*
+^package\.json$
+^test$
+^test\.config\.json
+^config\.json
+.*cookies\.txt$
+node_modules$
+^Rtest\.R$
+^Rinstall\.R$
+vdswim_impute.R
+todo.md
+lib
+log
