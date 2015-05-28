@@ -5,6 +5,8 @@ path <- './files'
 year <- 2012
 maxiter <- 200
 
+force.plot <- TRUE
+
 file <- './files/wim.51.E.vdsid.318383.2012.paired.RData'
 calvadmergepairs::couch.put.merged.pair(trackingdb=parts,
                       vds.id=318383,
@@ -46,7 +48,7 @@ test_that(
 
     vds_id <- 311903
     ## load the vds data
-    print(paste('loading',vds.id,'from',path))
+    print(paste('loading',vds_id,'from',path))
     df.vds <- calvadrscripts::get.and.plot.vds.amelia(
                   pair=vds_id,
                   year=year,
@@ -147,8 +149,22 @@ test_that(
             df.amelia.c <- rbind(df.amelia.c,temp)
         }
     }
-    ## get rid of stray dots in variable names
-    db.legal.names  <- gsub("\\.", "_", names(df.amelia.c))
-    names(df.amelia.c) <- db.legal.names
+
+    df.agg.amelia <- calvadrscripts::wim.medianed.aggregate.df(df.amelia.c)
+    attach.files <- calvadrscripts::plot_wim.data(df.merged=df.agg.amelia
+                                                 ,site_no=vds_id
+                                                 ,direction=''
+                                                 ,year=year
+                                                 ,fileprefix='vdstruckimpute'
+                                                 ,subhead='\nVDS site imputed trucks'
+                                                 ,force.plot=force.plot
+                                                 ,trackingdb=parts
+                                                  )
+    if(attach.files != 1){
+        for(f2a in c(attach.files)){
+            rcouchutils::couch.attach(parts,vds_id,f2a)
+        }
+    }
+
 
 })

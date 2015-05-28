@@ -9,7 +9,7 @@ lib_paths <- .libPaths()
 .libPaths(c(path, lib_paths))
 
 ## need env for test file
-## config_file <- Sys.getenv('R_CONFIG')
+config_file <- Sys.getenv('R_CONFIG')
 
 if(config_file ==  ''){
     config_file <- 'config.json'
