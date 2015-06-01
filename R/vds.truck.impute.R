@@ -145,9 +145,23 @@ impute.vds.site <- function(vdsid,wim_sites,year,path,maxiter,trackingdb){
     ## compress amelia output into medians, save that.  Much smaller
 
     df.agg.amelia <- calvadrscripts::wim.medianed.aggregate.df(morebig.amelia)
+    attach.files <- calvadrscripts::plot_wim.data(df.merged=df.agg.amelia
+                                                 ,site_no=vds_id
+                                                 ,direction=''
+                                                 ,year=year
+                                                 ,fileprefix='vdstruckimpute'
+                                                 ,subhead='\nVDS site imputed trucks'
+                                                 ,force.plot=force.plot
+                                                 ,trackingdb=trackingdb
+                                                  )
+    if(length(attach.files) != 1){
+        for(f2a in c(attach.files)){
+            rcouchutils::couch.attach(trackingdb,vds_id,f2a)
+        }
+    }
 
     ## unsure about this.  seems like lots of NA values could likely be produced.
-    df.amelia.c.l <- transpose.lanes.to.rows(df.amelia.c)
+    df.amelia.c.l <- calvadrscripts::transpose.lanes.to.rows(df.amelia.c)
 
     ## okay, actually write the csv file
     filename <- paste('vds_id',vdsid,'truck.imputed',year,'csv',sep='.')

@@ -7,11 +7,12 @@ maxiter <- 200
 
 force.plot <- TRUE
 
-file <- './files/wim.51.E.vdsid.318383.2012.paired.RData'
+path <- './files/'
+file <- paste(path,'wim.51.E.vdsid.318383.2012.paired.RData',sep='')
 calvadmergepairs::couch.put.merged.pair(trackingdb=parts,
                       vds.id=318383,
                       file=file)
-file <- './files/wim.52.W.vdsid.313822.2012.paired.RData'
+file <- paste(path,'wim.52.W.vdsid.313822.2012.paired.RData',sep='')
 calvadmergepairs::couch.put.merged.pair(trackingdb=parts,
                       vds.id=313822,
                       file=file)
@@ -139,6 +140,12 @@ test_that(
     keep.names <- union(keep.names,c('ts','tod','day','vds_id'))
     keep.names <- setdiff(keep.names,names_o_n)
 
+    ## because there are only three lanes at the VDS site, and 4 lanes
+    ## at the WIM site, I expect that the imputation after merge will
+    ## only have three lanes, that is, l1, r2, r1.  So if I see any r3
+    ## type lanes, fail this test.
+    expect_that(length(grep(pattern='_r3$',x=keep.names,perl=TRUE)),equals(0))
+
     df.amelia.c <- df.amelia.c[,keep.names]
 
     if(length(big.amelia$imputations) > 1){
@@ -160,7 +167,7 @@ test_that(
                                                  ,force.plot=force.plot
                                                  ,trackingdb=parts
                                                   )
-    if(attach.files != 1){
+    if(length(attach.files) != 1){
         for(f2a in c(attach.files)){
             rcouchutils::couch.attach(parts,vds_id,f2a)
         }
