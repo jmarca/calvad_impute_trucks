@@ -244,15 +244,17 @@ test_that(
                                 ))
                           )
 
-    csvdf <- readr::read_csv(
-        file='./tests/testthat/files/vds_id.311903.truck.imputed.2012.1.csv',
-        col_types='ciiiddddcdddddddd')
-    csvdf$ts <- readr::parse_datetime(csvdf$ts,"%Y-%m-%d %H:%M:%S",tz="UTC")
-    expect_that(table(csvdf$lane)[['l1']],equals(8784))
-    expect_that(table(csvdf$lane)[['r1']],equals(8784))
-    expect_that(table(csvdf$lane)[['r2']],equals(8784))
-    expect_that(levels(as.factor(csvdf$lane)),equals(c('l1','r1','r2')))
-    expect_that(dim(csvdf),equals(c(26352,17)))
+    if(requireNamespace("readr", quietly = TRUE)){
+        csvdf <- readr::read_csv(
+            file='./tests/testthat/files/vds_id.311903.truck.imputed.2012.1.csv',
+            col_types='ciiiddddcdddddddd')
+        csvdf$ts <- readr::parse_datetime(csvdf$ts,"%Y-%m-%d %H:%M:%S",tz="UTC")
+        expect_that(table(csvdf$lane)[['l1']],equals(8784))
+        expect_that(table(csvdf$lane)[['r1']],equals(8784))
+        expect_that(table(csvdf$lane)[['r2']],equals(8784))
+        expect_that(levels(as.factor(csvdf$lane)),equals(c('l1','r1','r2')))
+        expect_that(dim(csvdf),equals(c(26352,17)))
+    }
 }
 
 unlink(paste(path,'/vds_id.',vds_id,'.truck.imputed.',year,'.',c(1,2,3),'.csv',sep=''))
