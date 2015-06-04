@@ -6,19 +6,41 @@
 ##' given the VDS site's observed volumes and occupancies.
 ##'
 ##' @title impute.vds.site
-##' @param vdsid the VDS id
-##' @param year
-##' @param path the root for the local filesystem data
+##' @param vdsid the VDS id for the site where you want to impute
+##'     truck data
+##'
+##' @param wim_sites the list of "neighboring" WIM sites.  Each entry
+##'     in this list should have three components: vds_id, wim_site,
+##'     and direction.  For example,
+##'
+##'     wim.pairs[[1]] <-
+##'              list(vds_id=313822,wim_site=52,direction='W')
+##'
+##'     For the most part, this should be setup by looking at
+##'     distances and available data, valid self-imputations, etc.  At
+##'     the moment, this is setup in the calling JS code.
+##'
+##' @param year the year for the analysis
+##' @param vds_path where to start looking for VDS data
+##' @param output_path where to write the output
 ##' @param maxiter maximum iterations for Amelia run
-##' @param trackingdb The couchdb tracking db.  Any issues will be
-##' noted here
+##' @param trackingdb The couchdb tracking db.  Will fetch the WIM-VDS
+##'     paired data from this database, and any issues will be noted
+##'     here
+##'
 ##' @return nothing.  A big quit() from R when complete Run this for
-##' the side effects of generating imputed trucks.
+##'     the side effects of generating imputed trucks.
 ##' @author James E. Marca
-impute.vds.site <- function(vdsid,wim_sites,year,path,maxiter,trackingdb){
+##' @export
+##'
+impute.vds.site <- function(vds_id,wim_sites,year,
+                            vds_path,
+                            output_path,
+                            maxiter,
+                            trackingdb){
 
-    print(paste('processing ',paste(vdsid,collapse=', ')))
-
+    print(paste('processing ',paste(vds_id,collapse=', '),'paired to',
+                paste(wim_sites,collapse='; '),collapse=' '))
 
     ## if no neighbors, die now
     if(length(wim_sites)<1){
@@ -28,13 +50,13 @@ impute.vds.site <- function(vdsid,wim_sites,year,path,maxiter,trackingdb){
     }
 
     ## load the vds data
-    print(paste('loading',vds.id,'from',path))
+    print(paste('loading',vds_id,'from',vds_path))
     df.vds <- calvadrscripts::get.and.plot.vds.amelia(
                   pair=vds_id,
                   year=year,
                   doplots=FALSE,
                   remote=FALSE,
-                  path=path,
+                  path=vds_path,
                   force.plot=FALSE,
                   trackingdb=trackingdb)
 
@@ -43,13 +65,12 @@ impute.vds.site <- function(vdsid,wim_sites,year,path,maxiter,trackingdb){
 
     ## pick off the lane names so as to drop irrelevant lanes in the loop below
     vds.names <- names(df.vds)
-    vds.nvars <- grep( pattern="^n(l|r)\\d+",x=vds.names,perl=TRUE,value=TRUE)
 
 #####################
     ## loading WIM data paired with VDS data from WIM neighbor sites
 ######################
     bigdata <- calvadmergepairs::load.wim.pair.data(wim.pairs=wim.pairs,
-                                  vds.nvars=vds.nvars,
+                                  vds.nvars=vds.names,
                                   year=year,
                                   db=trackingdb
                                   )
@@ -112,7 +133,7 @@ impute.vds.site <- function(vdsid,wim_sites,year,path,maxiter,trackingdb){
     ## write out the imputation chains information to couchdb for later analysis
     ## and also generate plots as attachments
 
-    itercount <- store.amelia.chains(big.amelia,year,vdsid,'truckimputation',maxiter=maxiter)
+    itercount <- store.amelia.chains(big.amelia,year,vds_id,'truckimputation',maxiter=maxiter)
 
 
     ## extract just this vds_id data and
@@ -160,41 +181,35 @@ impute.vds.site <- function(vdsid,wim_sites,year,path,maxiter,trackingdb){
         }
     }
 
+    ######  FIXME FROM HERE ON ######
+
     ## unsure about this.  seems like lots of NA values could likely be produced.
     df.amelia.c.l <- calvadrscripts::transpose.lanes.to.rows(df.amelia.c)
 
     ## okay, actually write the csv file
-    filename <- paste('vds_id',vdsid,'truck.imputed',year,'csv',sep='.')
-    ## don't prior imputations
-    exists <- dir(output.path,filename)
+    filename <- paste('vds_id',vds_id,'truck.imputed',year,'csv',sep='.')
+    ## don't clobber prior imputations
+    exists <- dir(output_path,filename)
     tick <- 0
     while(length(exists)==1){
         tick = tick+1
-        filename <- paste('vds_id',vdsid,'truck.imputed',year,tick,'csv',sep='.')
+        filename <- paste('vds_id',vds_id,'truck.imputed',year,tick,'csv',sep='.')
         ## don't overwrite files
-        exists <- dir(output.path,filename)
+        exists <- dir(output_path,filename)
     }
-    file <- paste(output.path,filename,sep='/')
+    file <- paste(output_path,filename,sep='/')
+
+
+    ## aggregate to median, save as CSV, and/or write to couchdb right
+    ## here
 
     write.csv(df.amelia.c.l,file=file,row.names = FALSE)
     ## run perl code to slurp output
     ## system2('perl',paste(' -w /home/james/repos/bdp/parse_imputed_vds_trucks_to_couchDB.pl --cdb=imputed/breakup/ --file=',file,sep='')
-    ##         ,stdout = FALSE, stderr = paste(output.path,paste(vdsid,year,'parse_output.txt',sep='.'),sep='/'),wait=FALSE)
+    ##         ,stdout = FALSE, stderr = paste(output_path,paste(vds_id,year,'parse_output.txt',sep='.'),sep='/'),wait=FALSE)
 
-    ## while that runs, make some plots
-    df.amelia.c$vds_id <- NULL
-    ## generate a df for plots.  Use median here, because that is what I will do with final output
 
-    df.amelia.zoo <- medianed.aggregate.df(df.amelia.c)
-    df.med <- unzoo.incantation(df.amelia.zoo)
-    rm(df.amelia.zoo)
-    make.truck.plots(df.med,year,vdsid,'vds',vdsid,imputed=TRUE)
-    rm(df.med)
 
-    ## again, a save on a remote stystem is useles.  move on to csv,
-    ## possibly push to psql or couchdb
-
-    make.truck.plots.by.lane(df.amelia.c.l,year,vdsid,'vds',vdsid,imputed=TRUE)
     quit(save='no',status=10)
 
 }

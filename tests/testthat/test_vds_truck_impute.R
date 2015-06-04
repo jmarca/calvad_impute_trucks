@@ -7,12 +7,12 @@ maxiter <- 200
 
 force.plot <- TRUE
 
-path <- './files/'
-file <- paste(path,'wim.51.E.vdsid.318383.2012.paired.RData',sep='')
+path <- './files'
+file <- paste(path,'wim.51.E.vdsid.318383.2012.paired.RData',sep='/')
 calvadmergepairs::couch.put.merged.pair(trackingdb=parts,
                       vds.id=318383,
                       file=file)
-file <- paste(path,'wim.52.W.vdsid.313822.2012.paired.RData',sep='')
+file <- paste(path,'wim.52.W.vdsid.313822.2012.paired.RData',sep='/')
 calvadmergepairs::couch.put.merged.pair(trackingdb=parts,
                       vds.id=313822,
                       file=file)
@@ -30,8 +30,7 @@ test_that(
                                   )
 
     expect_that(bigdata,is_a('data.frame'))
-
-    expect_that(dim(bigdata),equals(c(10544,49)))
+    expect_that(dim(bigdata),equals(c(10544,51)))
     expect_that(sort(unique(bigdata$vds_id)),equals(c(313822,318383)))
 
 ## a sample output from distance table
@@ -45,7 +44,6 @@ test_that(
 ##     freeway: 50,
 ##     direction: 'west',
 ##     dist: 4564.10931177 },
-    year <- 2012
 
     vds_id <- 311903
     ## load the vds data
@@ -64,25 +62,30 @@ test_that(
 
     ## pick off the lane names so as to drop irrelevant lanes in the loop below
     vds.names <- names(df.vds)
-    vds.nvars <- grep( pattern="^n(l|r)\\d+",x=vds.names,perl=TRUE,value=TRUE)
 
 #####################
     ## loading WIM data paired with VDS data from WIM neighbor sites
 ######################
     bigdata <- calvadmergepairs::load.wim.pair.data(wim.pairs=wim.pairs,
-                                  vds.nvars=vds.nvars,
+                                  vds.nvars=vds.names,
                                   year=2012,
                                   db=parts
                                   )
 
     expect_that(bigdata,is_a('data.frame'))
-
-    expect_that(dim(bigdata),equals(c(10544,47))) ## missing one lane from earlier
+    expect_that(dim(bigdata),equals(c(10544,37))) ## missing one lane from earlier
     expect_that(sort(unique(bigdata$vds_id)),equals(c(313822,318383)))
+
+    ## because there are only three lanes at the VDS site, and 4 lanes
+    ## at the WIM site, I expect that the imputation after merge will
+    ## only have three lanes, that is, l1, r2, r1.  So if I see any r3
+    ## type lanes, fail this test.
+    varnames <- names(bigdata)
+    expect_that(length(grep(pattern='_r3$',x=bigdata,perl=TRUE)),equals(0))
 
 
     wimsites.names <-  names(bigdata)
-    vds.names <- names(df.vds)
+    ## vds.names <- names(df.vds)
     miss.names.wim <- setdiff(wimsites.names,vds.names)
     miss.names.vds <- setdiff(vds.names,wimsites.names)
     ## could be more lanes at the VDS site, for example
@@ -102,9 +105,10 @@ test_that(
     this.vds <- bigdata['vds_id'] == vds_id
     ## this.vds <- !is.na(this.vds)  ## lordy I hate when NA isn't falsey
 
-    for(i in miss.names.vds){
-        bigdata[,i] <- NULL
-    }
+    ## exclude as id vars for now, okay?? test and see
+    ## for(i in miss.names.vds){
+    ##     bigdata[,i] <- NULL
+    ## }
 
     ## improve imputation?
     ## add volume times occupancy artificial variable now
@@ -140,11 +144,6 @@ test_that(
     keep.names <- union(keep.names,c('ts','tod','day','vds_id'))
     keep.names <- setdiff(keep.names,names_o_n)
 
-    ## because there are only three lanes at the VDS site, and 4 lanes
-    ## at the WIM site, I expect that the imputation after merge will
-    ## only have three lanes, that is, l1, r2, r1.  So if I see any r3
-    ## type lanes, fail this test.
-    expect_that(length(grep(pattern='_r3$',x=keep.names,perl=TRUE)),equals(0))
 
     df.amelia.c <- df.amelia.c[,keep.names]
 
@@ -175,3 +174,5 @@ test_that(
 
 
 })
+
+## rcouchutils::couch.deletedb(parts)

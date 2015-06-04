@@ -30,86 +30,54 @@ con <-  dbConnect(m
                   ,host=config$postgresql$host
                   ,dbname=config$postgresql$db)
 
-district = Sys.getenv(c('RDISTRICT'))[1]
-
-if('' == district){
-  print('assign a district to the RDISTRICT environment variable')
-  exit(1)
+vds_id = Sys.getenv(c('VDS_ID'))[1]
+if('' == vds_id){
+  print('assign a vds_id to process to the VDS_ID environment variable')
+  stop(1)
 }
-
-file = Sys.getenv(c('FILE'))[1]
-if('' == file){
-  print('assign a file to process to the FILE environment variable')
-  exit(1)
-}
+vds_id <- as.numeric(vds_id)
 
 year = as.numeric(Sys.getenv(c('RYEAR'))[1])
 if('' == year){
   print('assign the year to process to the RYEAR environment variable')
-  exit(1)
+  stop(1)
 }
 
-district.path=paste(district,'/',sep='')
-
-file.names <- strsplit(file,split="/")
-file.names <- file.names[[1]]
-fname <-  strsplit(file.names[length(file.names)],"\\.")[[1]][1]
-vds.id <-  calvadrscripts::get.vdsid.from.filename(fname)
-pems.root = Sys.getenv(c('CALVAD_PEMS_ROOT'))[1]
-path = paste(pems.root,district,sep='')
-file <- paste(path,file,sep='/')
-print(file)
-goodfactor <-   3.5
-seconds = 120
-## using maxiter must be a number, not string
-## so the env var is irritating.  Hard code at 20 for now
-maxiter = Sys.getenv(c('CALVAD_VDS_IMPUTE_MAXITER'))[1]
-if('' == maxiter){
-    maxiter=20
-}
-print(maxiter)
-
-## fix everything below here
-output.path <- Sys.getenv(c('CALVAD_IMPUTE_PATH'))[1]
-if(is.null(output.path)){
-  print('assign a output.path to the CALVAD_IMPUTE_PATH environment variable')
-  exit(1)
+vds.root = Sys.getenv(c('CALVAD_VDS_PATH'))[1]
+if('' == vds.root){
+    if(! is.null(config.calvad.vdspath) && config.calvad.vdspath != '' ){
+        vds.root <- config.calvad.vdspath
+    }else{
+        print('assign a path to find the imputed vds data to the CALVAD_VDS_PATH environment variable or set calvad: {vdspath : '/the/vds/path'} in the config file')
+        stop(1)
+    }
 }
 
-localcouch = Sys.getenv(c('CALVAD_LOCAL_COUCH'))[1]
-if(is.null(localcouch)){
-  localcouch = FALSE
-}else{
-  localcouch = TRUE
+output.path <- Sys.getenv(c('CALVAD_OUTPUT_PATH'))[1]
+if('' == output.path || is.null(output.path)){
+    if(! is.null(config.calvad.outputpath) && config.calvad.outputpath != '' ){
+        output.path <- config.calvad.outputpath
+    }else{
+        print(paste('CALVAD_OUTPUT_PATH environment variable is not set and no entry in config file under calvad:{outputpath:...}, so setting output path to',vds.root))
+        output.path <- vds.root
+    }
 }
-
-
-vds.id = Sys.getenv(c('CALVAD_VDSID'))[1]
-if(is.null(vds.id)){
-  print('assign a file to process to the FILE environment variable')
-  exit(1)
-}
-
-year = as.numeric(Sys.getenv(c('CALVAD_YEAR'))[1])
-if(is.null(year)){
-  print('assign the year to process to the RYEAR environment variable')
-  exit(1)
-}
-
-seconds <- 3600
 
 maxiter = Sys.getenv(c('CALVAD_VDSWIM_IMPUTE_MAXITER'))[1]
 if(is.null(maxiter)){
     maxiter=200
 }
 
-pems.root = Sys.getenv(c('CALVAD_PEMS_ROOT'))[1]
-if(is.null(maxiter)){
-    pems.root <- '/data/backup/pems'
-}
 
 ## I don't think I use this anywhere
 ## wim.vds.pairs <- get.list.closest.wim.pairs()
 
 
-impute.vds.site(vds.id,year,path=pems.root,maxiter=maxiter)
+impute.vds.site(vdsid=vds_id,
+                wim_sites=wim_sites,
+                year=year,
+                vds_path=vds.root,
+                output_path=output.path,
+                maxiter=maxiter,
+                trackingdb=config.couchdb.trackingdb
+                )

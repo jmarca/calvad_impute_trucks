@@ -1,11 +1,11 @@
-##' Impute trucks for a VDS site
+##' Impute trucks for a VDS site  DEPRECATED
 ##'
 ##' pass in a VDS id, a year, and a path to stored data.  The
 ##' appropriate neighboring WIM-VDS pairs will be loaded for this VDS
 ##' site, and will be used to impute the most likely truck variables
 ##' given the VDS site's observed volumes and occupancies.
 ##'
-##' @title impute.vds.site
+##' @title old.version.impute.vds.site
 ##' @param vdsid the VDS id
 ##' @param year
 ##' @param path the root for the local filesystem data
@@ -13,7 +13,11 @@
 ##' @return nothing.  A big quit() from R when complete Run this for
 ##' the side effects of generating imputed trucks.
 ##' @author James E. Marca
-impute.vds.site <- function(vdsid,year,path,maxiter){
+##'
+old.version.impute.vds.site <- function(vdsid,year,vds.path,
+                            output.path,
+                            maxiter,
+                            trackingdb){
 
     print(paste('processing ',paste(vdsid,collapse=', ')))
 
@@ -26,7 +30,11 @@ impute.vds.site <- function(vdsid,year,path,maxiter){
     }
 
     ## load the vds data
-    df.vds.zoo <- get.and.plot.vds.amelia(pair=vdsid,year,doplots=FALSE,remote=FALSE,path=path)
+    df.vds.zoo <- calvadrscripts::get.and.plot.vds.amelia(pair=vdsid,year,
+                                                          doplots=FALSE,
+                                                          remote=FALSE,
+                                                          path=path,
+                                                          trackingdb=trackingdb)
 
     if(is.null(df.vds.zoo)){
         stop()
