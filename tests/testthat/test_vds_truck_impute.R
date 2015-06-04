@@ -2,6 +2,7 @@ config <- rcouchutils::get.config(Sys.getenv('RCOUCHUTILS_TEST_CONFIG'))
 parts <- c('vds','wim','impute','calls')
 rcouchutils::couch.makedb(parts)
 path <- './files'
+output_path <- './files'
 year <- 2012
 maxiter <- 200
 
@@ -68,7 +69,7 @@ test_that(
 ######################
     bigdata <- calvadmergepairs::load.wim.pair.data(wim.pairs=wim.pairs,
                                   vds.nvars=vds.names,
-                                  year=2012,
+                                  year=year,
                                   db=parts
                                   )
 
@@ -171,6 +172,25 @@ test_that(
             rcouchutils::couch.attach(parts,vds_id,f2a)
         }
     }
+
+    df.agg.amelia.l <- calvadrscripts::transpose.lanes.to.rows(df.agg.amelia)
+
+    ## okay, actually write the csv file
+    filename <- paste('vds_id',vds_id,'truck.imputed',year,'csv',sep='.')
+    ## don't clobber prior imputations
+    exists <- dir(output_path,filename)
+    tick <- 0
+    while(length(exists)==1){
+        tick = tick+1
+        filename <- paste('vds_id',vds_id,'truck.imputed',year,tick,'csv',sep='.')
+        ## don't overwrite files
+        exists <- dir(output_path,filename)
+    }
+    file <- paste(output_path,filename,sep='/')
+
+    write.csv(df.agg.amelia.l,file=file,row.names = FALSE)
+
+    ## load the file and check that it is okay
 
 
 })

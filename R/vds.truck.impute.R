@@ -82,7 +82,7 @@ impute.vds.site <- function(vds_id,wim_sites,year,
     }
 
     wimsites.names <-  names(bigdata)
-    vds.names <- names(df.vds)
+    ## vds.names <- names(df.vds)
     miss.names.wim <- setdiff(wimsites.names,vds.names)
     miss.names.vds <- setdiff(vds.names,wimsites.names)
     ## could be more lanes at the VDS site, for example
@@ -102,9 +102,10 @@ impute.vds.site <- function(vds_id,wim_sites,year,
     this.vds <- bigdata['vds_id'] == vds_id
     ## this.vds <- !is.na(this.vds)  ## lordy I hate when NA isn't falsey
 
-    for(i in miss.names.vds){
-        bigdata[,i] <- NULL
-    }
+    ## exclude as id vars for now, okay?? test and see
+    ## for(i in miss.names.vds){
+    ##     bigdata[,i] <- NULL
+    ## }
 
     ## improve imputation?
     ## add volume times occupancy artificial variable now
@@ -133,7 +134,7 @@ impute.vds.site <- function(vds_id,wim_sites,year,
     ## write out the imputation chains information to couchdb for later analysis
     ## and also generate plots as attachments
 
-    itercount <- store.amelia.chains(big.amelia,year,vds_id,'truckimputation',maxiter=maxiter)
+    itercount <- calvadrscripts::store.amelia.chains(big.amelia,year,vds_id,'truckimputation',maxiter=maxiter)
 
 
     ## extract just this vds_id data and
@@ -159,13 +160,8 @@ impute.vds.site <- function(vds_id,wim_sites,year,
             df.amelia.c <- rbind(df.amelia.c,temp)
         }
     }
-    ## get rid of stray dots in variable names
-    db.legal.names  <- gsub("\\.", "_", names(df.amelia.c))
-    names(df.amelia.c) <- db.legal.names
 
-    ## compress amelia output into medians, save that.  Much smaller
-
-    df.agg.amelia <- calvadrscripts::wim.medianed.aggregate.df(morebig.amelia)
+    df.agg.amelia <- calvadrscripts::wim.medianed.aggregate.df(df.amelia.c)
     attach.files <- calvadrscripts::plot_wim.data(df.merged=df.agg.amelia
                                                  ,site_no=vds_id
                                                  ,direction=''
@@ -184,7 +180,8 @@ impute.vds.site <- function(vds_id,wim_sites,year,
     ######  FIXME FROM HERE ON ######
 
     ## unsure about this.  seems like lots of NA values could likely be produced.
-    df.amelia.c.l <- calvadrscripts::transpose.lanes.to.rows(df.amelia.c)
+    ## df.amelia.c.l <- calvadrscripts::transpose.lanes.to.rows(df.amelia.c)
+    df.agg.amelia.l <- calvadrscripts::transpose.lanes.to.rows(df.agg.amelia)
 
     ## okay, actually write the csv file
     filename <- paste('vds_id',vds_id,'truck.imputed',year,'csv',sep='.')
@@ -203,7 +200,7 @@ impute.vds.site <- function(vds_id,wim_sites,year,
     ## aggregate to median, save as CSV, and/or write to couchdb right
     ## here
 
-    write.csv(df.amelia.c.l,file=file,row.names = FALSE)
+    write.csv(df.agg.amelia.l,file=file,row.names = FALSE)
     ## run perl code to slurp output
     ## system2('perl',paste(' -w /home/james/repos/bdp/parse_imputed_vds_trucks_to_couchDB.pl --cdb=imputed/breakup/ --file=',file,sep='')
     ##         ,stdout = FALSE, stderr = paste(output_path,paste(vds_id,year,'parse_output.txt',sep='.'),sep='/'),wait=FALSE)
