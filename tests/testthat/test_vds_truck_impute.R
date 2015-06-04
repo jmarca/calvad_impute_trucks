@@ -8,7 +8,6 @@ maxiter <- 200
 
 force.plot <- TRUE
 
-path <- './files'
 file <- paste(path,'wim.51.E.vdsid.318383.2012.paired.RData',sep='/')
 calvadmergepairs::couch.put.merged.pair(trackingdb=parts,
                       vds.id=318383,
@@ -190,9 +189,63 @@ test_that(
 
     write.csv(df.agg.amelia.l,file=file,row.names = FALSE)
 
-    ## load the file and check that it is okay
+    ## load the file and check that it is okay?
 
 
 })
 
+
+test_that(
+    "can impute trucks files",{
+    vds_id <- 311903
+    wim_pairs <- list()
+    wim_pairs[[1]] <- list(vds_id=313822,wim_site=52,direction='W')
+    wim_pairs[[2]] <- list(vds_id=318383,wim_site=51,direction='E')
+    result <- impute.vds.site(vds_id=vds_id,
+                              wim_pairs=wim_pairs,
+                              year=year,
+                              vds_path=path,
+                              output_path=path,
+                              maxiter=200,
+                              trackingdb=parts)
+    ## second time through, expect that the filename has been incremented to 2
+    testthat::expect_match(result,'truck.imputed.2012.2.csv$')
+    result <- impute.vds.site(vds_id=vds_id,
+                              wim_pairs=wim_pairs,
+                              year=year,
+                              vds_path=path,
+                              output_path=path,
+                              maxiter=200,
+                              trackingdb=parts)
+    ## second time through, expect that the filename has been incremented to 2
+    testthat::expect_match(result,'truck.imputed.2012.3.csv$')
+
+     saved_chain_lengths <- rcouchutils::couch.check.state(year=year,id=311903,state='truckimputation_chain_lengths',db=parts)
+    saved_max_iterations <- rcouchutils::couch.check.state(year=year,id=311903,state='truckimputation_max_iterations',db=parts)
+    testthat::expect_more_than(object=mean(saved_chain_lengths),expected=50)
+    testthat::expect_less_than(object=mean(saved_chain_lengths),expected=70)
+    testthat::expect_equal(object=saved_max_iterations,expected=0)
+
+    ## expect that the six post-imputation plots are there too
+    doc <- rcouchutils::couch.get(parts,vds_id)
+    attachments <- doc[['_attachments']]
+    testthat::expect_that(attachments,testthat::is_a('list'))
+    testthat::expect_that(sort(names(attachments)),
+                          testthat::equals(
+                              c(paste(vds_id,year,
+                                      'vdstruckimpute',
+                                      c("001.png",
+                                        "002.png",
+                                        "003.png",
+                                        "004.png",
+                                        "005.png",
+                                        "006.png"),
+                                      sep='_')
+                                ))
+                          )
+
+
+}
+
+unlink(paste(path,'/vds_id.',vds_id,'.truck.imputed.',year,'.',c(1,2,3),'.csv',sep=''))
 ## rcouchutils::couch.deletedb(parts)

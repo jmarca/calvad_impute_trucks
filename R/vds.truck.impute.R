@@ -9,11 +9,11 @@
 ##' @param vdsid the VDS id for the site where you want to impute
 ##'     truck data
 ##'
-##' @param wim_sites the list of "neighboring" WIM sites.  Each entry
+##' @param wim_pairs the list of "neighboring" WIM sites.  Each entry
 ##'     in this list should have three components: vds_id, wim_site,
 ##'     and direction.  For example,
 ##'
-##'     wim.pairs[[1]] <-
+##'     wim_pairs[[1]] <-
 ##'              list(vds_id=313822,wim_site=52,direction='W')
 ##'
 ##'     For the most part, this should be setup by looking at
@@ -28,24 +28,25 @@
 ##'     paired data from this database, and any issues will be noted
 ##'     here
 ##'
-##' @return nothing.  A big quit() from R when complete Run this for
-##'     the side effects of generating imputed trucks.
+##' @return the file name for the dumped CSV file containing the
+##'     results of the imputation
 ##' @author James E. Marca
 ##' @export
 ##'
-impute.vds.site <- function(vds_id,wim_sites,year,
+impute.vds.site <- function(vds_id,wim_pairs,year,
                             vds_path,
                             output_path,
                             maxiter,
-                            trackingdb){
+                            trackingdb,
+                            force.plot=TRUE){
 
     print(paste('processing ',paste(vds_id,collapse=', '),'paired to',
-                paste(wim_sites,collapse='; '),collapse=' '))
+                paste(wim_pairs,collapse='; '),collapse=' '))
 
     ## if no neighbors, die now
-    if(length(wim_sites)<1){
-        print('no neighbors?')
-        print(paste(wim_sites,sep=' '))
+    if(length(wim_pairs)<1){
+        print('no neighboring WIM-VDS pairs passed in?')
+        print(paste(wim_pairs,sep=' ',collapse=' '))
         quit(status=9)
     }
 
@@ -69,7 +70,7 @@ impute.vds.site <- function(vds_id,wim_sites,year,
 #####################
     ## loading WIM data paired with VDS data from WIM neighbor sites
 ######################
-    bigdata <- calvadmergepairs::load.wim.pair.data(wim.pairs=wim.pairs,
+    bigdata <- calvadmergepairs::load.wim.pair.data(wim.pairs=wim_pairs,
                                   vds.nvars=vds.names,
                                   year=year,
                                   db=trackingdb
@@ -134,7 +135,7 @@ impute.vds.site <- function(vds_id,wim_sites,year,
     ## write out the imputation chains information to couchdb for later analysis
     ## and also generate plots as attachments
 
-    itercount <- calvadrscripts::store.amelia.chains(big.amelia,year,vds_id,'truckimputation',maxiter=maxiter)
+    itercount <- calvadrscripts::store.amelia.chains(big.amelia,year,vds_id,'truckimputation',maxiter=maxiter,db=trackingdb)
 
 
     ## extract just this vds_id data and
@@ -207,6 +208,6 @@ impute.vds.site <- function(vds_id,wim_sites,year,
 
 
 
-    quit(save='no',status=10)
+    return (file)
 
 }
