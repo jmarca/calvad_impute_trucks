@@ -1,3 +1,7 @@
 /test.config.json
 /config.json
 /components/
+*~
+/node_modules/
+/.Rhistory
+/.cookies.txt
