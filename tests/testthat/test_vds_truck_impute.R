@@ -208,8 +208,8 @@ test_that(
                               output_path=path,
                               maxiter=200,
                               trackingdb=parts)
-    ## second time through, expect that the filename has been incremented to 2
-    testthat::expect_match(result,'truck.imputed.2012.2.csv$')
+    ## second time through, expect that the filename has been incremented to 1
+    testthat::expect_match(result,'truck.imputed.2012.1.csv$')
     result <- impute.vds.site(vds_id=vds_id,
                               wim_pairs=wim_pairs,
                               year=year,
@@ -218,7 +218,7 @@ test_that(
                               maxiter=200,
                               trackingdb=parts)
     ## second time through, expect that the filename has been incremented to 2
-    testthat::expect_match(result,'truck.imputed.2012.3.csv$')
+    testthat::expect_match(result,'truck.imputed.2012.2.csv$')
 
      saved_chain_lengths <- rcouchutils::couch.check.state(year=year,id=311903,state='truckimputation_chain_lengths',db=parts)
     saved_max_iterations <- rcouchutils::couch.check.state(year=year,id=311903,state='truckimputation_max_iterations',db=parts)
@@ -244,8 +244,17 @@ test_that(
                                 ))
                           )
 
-
+    csvdf <- readr::read_csv(
+        file='./tests/testthat/files/vds_id.311903.truck.imputed.2012.1.csv',
+        col_types='ciiiddddcdddddddd')
+    csvdf$ts <- readr::parse_datetime(csvdf$ts,"%Y-%m-%d %H:%M:%S",tz="UTC")
+    expect_that(table(csvdf$lane)[['l1']],equals(8784))
+    expect_that(table(csvdf$lane)[['r1']],equals(8784))
+    expect_that(table(csvdf$lane)[['r2']],equals(8784))
+    expect_that(levels(as.factor(csvdf$lane)),equals(c('l1','r1','r2')))
+    expect_that(dim(csvdf),equals(c(26352,17)))
 }
 
 unlink(paste(path,'/vds_id.',vds_id,'.truck.imputed.',year,'.',c(1,2,3),'.csv',sep=''))
+unlink(paste(path,'/vds_id.',vds_id,'.truck.imputed.',year,'.csv',sep=''))
 ## rcouchutils::couch.deletedb(parts)
