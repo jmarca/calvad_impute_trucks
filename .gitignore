@@ -5,3 +5,6 @@
 /node_modules/
 /.Rhistory
 /.cookies.txt
+/tests/testthat/.cookies.txt
+/man/
+/tests/testthat/images/
