@@ -30,36 +30,36 @@ con <-  dbConnect(m
                   ,host=config$postgresql$host
                   ,dbname=config$postgresql$db)
 
-vds_id = Sys.getenv(c('VDS_ID'))[1]
+vds_id = Sys.getenv(c('CALVAD_VDS_ID'))[1]
 if('' == vds_id){
-  print('assign a vds_id to process to the VDS_ID environment variable')
+  print('assign a vds_id to process to the CALVAD_VDS_ID environment variable')
   stop(1)
 }
 vds_id <- as.numeric(vds_id)
 
-year = as.numeric(Sys.getenv(c('RYEAR'))[1])
+year = as.numeric(Sys.getenv(c('CALVAD_YEAR'))[1])
 if('' == year){
-  print('assign the year to process to the RYEAR environment variable')
+  print('assign the year to process to the CALVAD_YEAR environment variable')
   stop(1)
 }
 
-vds.root = Sys.getenv(c('CALVAD_VDS_PATH'))[1]
-if('' == vds.root){
+vds_path = Sys.getenv(c('CALVAD_VDS_PATH'))[1]
+if('' == vds_path){
     if(! is.null(config.calvad.vdspath) && config.calvad.vdspath != '' ){
-        vds.root <- config.calvad.vdspath
+        vds_path <- config.calvad.vdspath
     }else{
         print('assign a path to find the imputed vds data to the CALVAD_VDS_PATH environment variable or set calvad: {vdspath : '/the/vds/path'} in the config file')
         stop(1)
     }
 }
 
-output.path <- Sys.getenv(c('CALVAD_OUTPUT_PATH'))[1]
-if('' == output.path || is.null(output.path)){
+output_path <- Sys.getenv(c('CALVAD_OUTPUT_PATH'))[1]
+if('' == output_path || is.null(output_path)){
     if(! is.null(config.calvad.outputpath) && config.calvad.outputpath != '' ){
-        output.path <- config.calvad.outputpath
+        output_path <- config.calvad.outputpath
     }else{
-        print(paste('CALVAD_OUTPUT_PATH environment variable is not set and no entry in config file under calvad:{outputpath:...}, so setting output path to',vds.root))
-        output.path <- vds.root
+        print(paste('CALVAD_OUTPUT_PATH environment variable is not set and no entry in config file under calvad:{outputpath:...}, so setting output path to',vds_path))
+        output_path <- vds_path
     }
 }
 
@@ -68,16 +68,36 @@ if(is.null(maxiter)){
     maxiter=200
 }
 
+wim_pairs = Sys.getenv(c('CALVAD_WIM_PAIRS'))[1]
+if(is.null(wim_pairs) || '' == wim_pairs){
+    print(paste('assign the wim_pairs for site',vds_id,'to the CALVAD_WIM_PAIRS environment variable',collapse=' '))
+    stop(1)
+}
+## need to convert the CSV string of wim_pairs info into a proper R list
 
-## I don't think I use this anywhere
-## wim.vds.pairs <- get.list.closest.wim.pairs()
 
+print(paste('calling impute with options',
+            paste(c(vds_id,
+                    wim_pairs,
+                    year,
+                    vds_path,
+                    output_path,
+                    maxiter,
+                    config.couchdb.trackingdb)
+                    ,collapse=' ',sep=',')
+                  ))
 
-impute.vds.site(vdsid=vds_id,
-                wim_sites=wim_sites,
-                year=year,
-                vds_path=vds.root,
-                output_path=output.path,
-                maxiter=maxiter,
-                trackingdb=config.couchdb.trackingdb
-                )
+## debugging
+stop(1)
+
+result <- impute.vds.site(vds_id=vds_id,
+                          wim_pairs=wim_pairs,
+                          year=year,
+                          vds_path=vds_path,
+                          output_path=output_path,
+                          maxiter=maxiter,
+                          trackingdb=config.couchdb.trackingdb
+                          )
+
+print(paste('imputation output saved to',result))
+quit(save='no',status=10)
