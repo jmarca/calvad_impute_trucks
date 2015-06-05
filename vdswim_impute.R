@@ -45,22 +45,22 @@ if('' == year){
 
 vds_path = Sys.getenv(c('CALVAD_VDS_PATH'))[1]
 if('' == vds_path){
-    if(! is.null(config.calvad.vdspath) && config.calvad.vdspath != '' ){
-        vds_path <- config.calvad.vdspath
-    }else{
-        print('assign a path to find the imputed vds data to the CALVAD_VDS_PATH environment variable or set calvad: {vdspath : '/the/vds/path'} in the config file')
+    ## if(! is.null(config$calvad$vdspath) && config$calvad$vdspath != '' ){
+    ##     vds_path <- config.calvad.vdspath
+    ## }else{
+        print('assign a path to find the imputed vds data to the CALVAD_VDS_PATH environment variable or set calvad: {vdspath : /the/vds/path} in the config file')
         stop(1)
-    }
+    ##}
 }
 
 output_path <- Sys.getenv(c('CALVAD_OUTPUT_PATH'))[1]
 if('' == output_path || is.null(output_path)){
-    if(! is.null(config.calvad.outputpath) && config.calvad.outputpath != '' ){
-        output_path <- config.calvad.outputpath
-    }else{
+    ## if(! is.null(config.calvad.outputpath) && config.calvad.outputpath != '' ){
+    ##     output_path <- config.calvad.outputpath
+    ## }else{
         print(paste('CALVAD_OUTPUT_PATH environment variable is not set and no entry in config file under calvad:{outputpath:...}, so setting output path to',vds_path))
         output_path <- vds_path
-    }
+    ## }
 }
 
 maxiter = Sys.getenv(c('CALVAD_VDSWIM_IMPUTE_MAXITER'))[1]
@@ -74,8 +74,18 @@ if(is.null(wim_pairs) || '' == wim_pairs){
     stop(1)
 }
 ## need to convert the CSV string of wim_pairs info into a proper R list
+print(wim_pairs)
+w_p.df <- as.data.frame(matrix(data=strsplit(x=wim_pairs,split=',')[[1]],ncol=3,byrow=TRUE),stringsAsFactors=FALSE)
+w_p.df[,1] <- as.numeric(w_p.df[,1])
+w_p.df[,2] <- as.numeric(w_p.df[,2])
 
 
+wim_pairs <- list()
+for(i in 1:length(w_p.df[,1])){
+    wim_pairs[[i]] <- list(vds_id=w_p.df[i,1],
+                           wim_site=w_p.df[i,2],
+                           direction=w_p.df[i,3])
+}
 print(paste('calling impute with options',
             paste(c(vds_id,
                     wim_pairs,
@@ -83,12 +93,9 @@ print(paste('calling impute with options',
                     vds_path,
                     output_path,
                     maxiter,
-                    config.couchdb.trackingdb)
+                    config$couchdb$trackingdb)
                     ,collapse=' ',sep=',')
                   ))
-
-## debugging
-stop(1)
 
 result <- impute.vds.site(vds_id=vds_id,
                           wim_pairs=wim_pairs,
@@ -96,7 +103,7 @@ result <- impute.vds.site(vds_id=vds_id,
                           vds_path=vds_path,
                           output_path=output_path,
                           maxiter=maxiter,
-                          trackingdb=config.couchdb.trackingdb
+                          trackingdb=config$couchdb$trackingdb
                           )
 
 print(paste('imputation output saved to',result))
