@@ -98,17 +98,16 @@ impute.vds.site <- function(vds_id,wim_pairs,year,
 
     ## merge vds into bigdata
     bigdata <- rbind(bigdata,df.vds)
-    miss.names.vds <- union(miss.names.vds,c('vds_id'))
+    ## miss.names.vds <- union(miss.names.vds,c('vds_id'))
     i.hate.r <- c(miss.names.vds,'nr1') ## need a dummy index or R will simplify
     holding.pattern <- bigdata[,i.hate.r]
 
     this.vds <- bigdata['vds_id'] == vds_id
-    ## this.vds <- !is.na(this.vds)  ## lordy I hate when NA isn't falsey
 
     ## exclude as id vars for now, okay?? test and see
-    ## for(i in miss.names.vds){
-    ##     bigdata[,i] <- NULL
-    ## }
+    for(i in miss.names.vds){
+        bigdata[,i] <- NULL
+    }
 
     ## improve imputation?
     ## add volume times occupancy artificial variable now
