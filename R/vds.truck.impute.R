@@ -98,17 +98,16 @@ impute.vds.site <- function(vds_id,wim_pairs,year,
 
     ## merge vds into bigdata
     bigdata <- rbind(bigdata,df.vds)
-    miss.names.vds <- union(miss.names.vds,c('vds_id'))
+    ## miss.names.vds <- union(miss.names.vds,c('vds_id'))
     i.hate.r <- c(miss.names.vds,'nr1') ## need a dummy index or R will simplify
     holding.pattern <- bigdata[,i.hate.r]
 
     this.vds <- bigdata['vds_id'] == vds_id
-    ## this.vds <- !is.na(this.vds)  ## lordy I hate when NA isn't falsey
 
     ## exclude as id vars for now, okay?? test and see
-    ## for(i in miss.names.vds){
-    ##     bigdata[,i] <- NULL
-    ## }
+    for(i in miss.names.vds){
+        bigdata[,i] <- NULL
+    }
 
     ## improve imputation?
     ## add volume times occupancy artificial variable now
@@ -136,8 +135,6 @@ impute.vds.site <- function(vds_id,wim_pairs,year,
 
     ## write out the imputation chains information to couchdb for later analysis
     ## and also generate plots as attachments
-
-    itercount <- calvadrscripts::store.amelia.chains(big.amelia,year,vds_id,'truckimputation',maxiter=maxiter,db=trackingdb)
 
 
     ## extract just this vds_id data and
@@ -180,9 +177,7 @@ impute.vds.site <- function(vds_id,wim_pairs,year,
         }
     }
 
-    ######  FIXME FROM HERE ON ######
-
-    ## unsure about this.  seems like lots of NA values could likely be produced.
+    ## a lot of NA values get produced.  whatever. left lane trucks tend not to exist
     ## df.amelia.c.l <- calvadrscripts::transpose.lanes.to.rows(df.amelia.c)
     df.agg.amelia.l <- calvadrscripts::transpose.lanes.to.rows(df.agg.amelia)
 
@@ -209,6 +204,9 @@ impute.vds.site <- function(vds_id,wim_pairs,year,
     ##         ,stdout = FALSE, stderr = paste(output_path,paste(vds_id,year,'parse_output.txt',sep='.'),sep='/'),wait=FALSE)
 
 
+
+    ## last thing is to tag the "done state" in couchdb
+    calvadrscripts::store.amelia.chains(big.amelia,year,vds_id,'truckimputation',maxiter=maxiter,db=trackingdb)
 
     return (file)
 
