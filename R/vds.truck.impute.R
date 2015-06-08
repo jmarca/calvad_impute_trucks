@@ -137,8 +137,6 @@ impute.vds.site <- function(vds_id,wim_pairs,year,
     ## write out the imputation chains information to couchdb for later analysis
     ## and also generate plots as attachments
 
-    itercount <- calvadrscripts::store.amelia.chains(big.amelia,year,vds_id,'truckimputation',maxiter=maxiter,db=trackingdb)
-
 
     ## extract just this vds_id data and
     ## put back any variables I took out above
@@ -180,9 +178,7 @@ impute.vds.site <- function(vds_id,wim_pairs,year,
         }
     }
 
-    ######  FIXME FROM HERE ON ######
-
-    ## unsure about this.  seems like lots of NA values could likely be produced.
+    ## a lot of NA values get produced.  whatever. left lane trucks tend not to exist
     ## df.amelia.c.l <- calvadrscripts::transpose.lanes.to.rows(df.amelia.c)
     df.agg.amelia.l <- calvadrscripts::transpose.lanes.to.rows(df.agg.amelia)
 
@@ -209,6 +205,9 @@ impute.vds.site <- function(vds_id,wim_pairs,year,
     ##         ,stdout = FALSE, stderr = paste(output_path,paste(vds_id,year,'parse_output.txt',sep='.'),sep='/'),wait=FALSE)
 
 
+
+    ## last thing is to tag the "done state" in couchdb
+    calvadrscripts::store.amelia.chains(big.amelia,year,vds_id,'truckimputation',maxiter=maxiter,db=trackingdb)
 
     return (file)
 

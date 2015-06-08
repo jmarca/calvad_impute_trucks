@@ -33,6 +33,9 @@ fill.truck.gaps <- function(df
   negatives <-  !( df>=0 | is.na(df) )
   df[negatives] <- 0
 
+  print('Imputation step; filling in the truck NAs in the data:')
+  print(summary(df))
+
   ## sort out upper limits
   occ.pattern <- "(^ol1$|^or\\d$)"
   ic.names <- names(df)
@@ -60,7 +63,8 @@ fill.truck.gaps <- function(df
   print("bounds:")
   print(pos.bds)
 
-  exclude.as.id.vars <- setdiff(ic.names,c(mean.vars,count.vars,'tod','day','vds_id'))
+  exclude.as.id.vars <- setdiff(ic.names,c(mean.vars,count.vars,'tod','day'))
+  exclude.as.id.vars <- union(exclude.as.id.vars,'vds_id')
   print(paste("count vars:",paste(count.vars,collapse=' ')))
   print(paste("mean vars:", paste(mean.vars,collapse=' ')))
   print(paste("excluded:",  paste(exclude.as.id.vars,collapse=' ')))
