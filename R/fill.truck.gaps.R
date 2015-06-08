@@ -105,6 +105,7 @@ fill.truck.gaps <- function(df
   ##          ##,m=1 ## desperate measures!  set to limit the imputations
   ##          )
 
+
  df.amelia <-
     Amelia::amelia(df,idvars=exclude.as.id.vars,
            ts="tod",

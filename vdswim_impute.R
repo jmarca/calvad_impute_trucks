@@ -8,6 +8,11 @@ path <- normalizePath(node_paths, winslash = "/", mustWork = FALSE)
 lib_paths <- .libPaths()
 .libPaths(c(path, lib_paths))
 
+print(.libPaths())
+
+pkg <- devtools::as.package('.')
+ns_env <- devtools::load_all(pkg,quiet = TRUE)$env
+
 ## need env for test file
 config_file <- Sys.getenv('R_CONFIG')
 
@@ -28,6 +33,7 @@ m <- dbDriver("PostgreSQL")
 con <-  dbConnect(m
                   ,user=config$postgresql$auth$username
                   ,host=config$postgresql$host
+                  ,port=config$postgresql$port
                   ,dbname=config$postgresql$db)
 
 vds_id = Sys.getenv(c('CALVAD_VDS_ID'))[1]
@@ -45,28 +51,31 @@ if('' == year){
 
 vds_path = Sys.getenv(c('CALVAD_VDS_PATH'))[1]
 if('' == vds_path){
-    ## if(! is.null(config$calvad$vdspath) && config$calvad$vdspath != '' ){
-    ##     vds_path <- config.calvad.vdspath
-    ## }else{
-        print('assign a path to find the imputed vds data to the CALVAD_VDS_PATH environment variable or set calvad: {vdspath : /the/vds/path} in the config file')
-        stop(1)
-    ##}
+    if(! is.null(config$calvad$vdspath) && config$calvad$vdspath != '' ){
+        vds_path <- config$calvad$vdspath
+    }
+}
+if('' == vds_path){
+    print('assign a path to find the imputed vds data to the CALVAD_VDS_PATH environment variable or set calvad: {vdspath : /the/vds/path} in the config file')
+    stop(1)
 }
 
 output_path <- Sys.getenv(c('CALVAD_OUTPUT_PATH'))[1]
 if('' == output_path || is.null(output_path)){
-    ## if(! is.null(config.calvad.outputpath) && config.calvad.outputpath != '' ){
-    ##     output_path <- config.calvad.outputpath
-    ## }else{
-        print(paste('CALVAD_OUTPUT_PATH environment variable is not set and no entry in config file under calvad:{outputpath:...}, so setting output path to',vds_path))
-        output_path <- vds_path
-    ## }
+    if(! is.null(config$calvad$outputpath) && config$calvad$outputpath != '' ){
+        output_path <- config$calvad$outputpath
+    }
+}
+if('' == output_path || is.null(output_path)){
+    print(paste('CALVAD_OUTPUT_PATH environment variable is not set and no entry in config file under calvad:{outputpath:...}, so setting output path to',vds_path))
+    output_path <- vds_path
 }
 
 maxiter = Sys.getenv(c('CALVAD_VDSWIM_IMPUTE_MAXITER'))[1]
 if(is.null(maxiter)){
     maxiter=200
 }
+maxiter <- as.numeric(maxiter)
 
 wim_pairs = Sys.getenv(c('CALVAD_WIM_PAIRS'))[1]
 if(is.null(wim_pairs) || '' == wim_pairs){
@@ -74,7 +83,6 @@ if(is.null(wim_pairs) || '' == wim_pairs){
     stop(1)
 }
 ## need to convert the CSV string of wim_pairs info into a proper R list
-print(wim_pairs)
 w_p.df <- as.data.frame(matrix(data=strsplit(x=wim_pairs,split=',')[[1]],ncol=3,byrow=TRUE),stringsAsFactors=FALSE)
 w_p.df[,1] <- as.numeric(w_p.df[,1])
 w_p.df[,2] <- as.numeric(w_p.df[,2])

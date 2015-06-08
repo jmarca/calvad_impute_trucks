@@ -40,6 +40,7 @@ impute.vds.site <- function(vds_id,wim_pairs,year,
                             trackingdb,
                             force.plot=TRUE){
 
+    print('hello from impute.vds.site')
     print(paste('processing ',paste(vds_id,collapse=', '),'paired to',
                 paste(wim_pairs,collapse='; '),collapse=' '))
 
@@ -64,6 +65,7 @@ impute.vds.site <- function(vds_id,wim_pairs,year,
     ## so that I can pluck out just this site's data at the end of imputation
     df.vds[,'vds_id'] <- vds_id
 
+    print(summary(df.vds))
     ## pick off the lane names so as to drop irrelevant lanes in the loop below
     vds.names <- names(df.vds)
 
