@@ -72,6 +72,7 @@ impute.vds.site <- function(vds_id,wim_pairs,year,
 #####################
     ## loading WIM data paired with VDS data from WIM neighbor sites
 ######################
+
     bigdata <- calvadmergepairs::load.wim.pair.data(wim.pairs=wim_pairs,
                                   vds.nvars=vds.names,
                                   year=year,
