@@ -37,7 +37,6 @@ test_that(
     })
 
 
-unlink(paste(path,'/vds_id.',vds_id,'.truck.imputed.',year,'.',c(1,2,3),'.csv',sep=''))
 unlink(paste(path,'/vds_id.',vds_id,'.truck.imputed.',year,'.csv',sep=''))
-unlink(paste(path,'/images'),recursive = TRUE)
+unlink(paste(path,'/images/',vds_id,sep=''),recursive = TRUE)
 rcouchutils::couch.deletedb(parts)

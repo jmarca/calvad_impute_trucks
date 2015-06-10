@@ -142,7 +142,10 @@ impute.vds.site <- function(vds_id,wim_pairs,year,
     ## put back any variables I took out above
 
     df.amelia.c <- big.amelia$imputations[[1]][this.vds,]
-    df.amelia.c[,miss.names.vds] <- holding.pattern[this.vds,miss.names.vds]
+
+    if(length(miss.names.vds)>0){
+        df.amelia.c[,miss.names.vds] <- holding.pattern[this.vds,miss.names.vds]
+    }
 
     ## limit to what I did impute only
     varnames <- names(df.amelia.c)
@@ -156,7 +159,9 @@ impute.vds.site <- function(vds_id,wim_pairs,year,
     if(length(big.amelia$imputations) > 1){
         for(i in 2:length(big.amelia$imputations)){
             temp <- big.amelia$imputations[[i]][this.vds,]
-            temp[,miss.names.vds] <- holding.pattern[this.vds,miss.names.vds]
+            if(length(miss.names.vds)>0){
+                temp[,miss.names.vds] <- holding.pattern[this.vds,miss.names.vds]
+            }
             temp <- temp[,keep.names]
             df.amelia.c <- rbind(df.amelia.c,temp)
         }

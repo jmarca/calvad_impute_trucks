@@ -120,7 +120,7 @@ fill.truck.gaps <- function(df
            intercs=TRUE,
            emburn=c(2,maxiter),
            bounds = pos.bds, max.resample=10,empri = 0.05 *nrow(df))
-
+  print('done imputing run')
     df.amelia
 }
 
