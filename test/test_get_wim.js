@@ -30,6 +30,12 @@ describe('get finished imputed WIM sites',function(){
                         should.not.exist(e)
                         should.exist(sites)
                         sites.should.have.lengthOf(140)
+                        sites.forEach(function(w){
+                            w.should.have.property('doc')
+                            w['doc'].should.have.property(config.year)
+                            w['doc'][config.year].should.have.property('imputed')
+                            return null
+                        })
                         return done()
                     })
     })
@@ -44,6 +50,12 @@ describe('get merged WIM sites',function(){
                         should.not.exist(e)
                         should.exist(sites)
                         sites.should.have.lengthOf(85)
+                        sites.forEach(function(w){
+                            w.should.have.property('doc')
+                            w['doc'].should.have.property(config.year)
+                            w['doc'][config.year].should.have.property('merged')
+                            return null
+                        })
                         return done()
                     })
     })
