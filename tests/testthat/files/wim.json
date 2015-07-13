@@ -1,0 +1,9 @@
+{
+   "language": "javascript",
+   "views": {
+       "pairRData": {
+           "map": "function(doc) {\n  var re = new RegExp(\"^wim\"); \n  if( ! re.test(doc._id) ){\n    var re2 = new RegExp(\"^wim.*paired\\.RData$\"); \n    var keys = Object.keys(doc._attachments);\n    var ys = keys.filter(function(k){return re2.test(k)});\n    \n    ys.forEach(function(y){\n      var parts=y.split('.')\n      emit([parts[5],[parts[0],parts[1],parts[2]].join('.'),y],null)\n    })\n  }\n}",
+           "reduce": "_count"
+       }
+   }
+}
