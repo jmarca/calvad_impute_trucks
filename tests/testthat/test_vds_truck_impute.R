@@ -83,113 +83,113 @@ test_that(
     varnames <- names(bigdata)
     expect_that(length(grep(pattern='_r3$',x=bigdata,perl=TRUE)),equals(0))
 
+## ### no more tests
+##     wimsites.names <-  names(bigdata)
+##     ## vds.names <- names(df.vds)
+##     miss.names.wim <- setdiff(wimsites.names,vds.names)
+##     miss.names.vds <- setdiff(vds.names,wimsites.names)
+##     ## could be more lanes at the VDS site, for example
+##     if(length(miss.names.vds)>0){
+##         bigdata[,miss.names.vds] <- NA
+##     }
+##     ## of course this will be necessary, as the wimsites have truck
+##     ## data and the vds does not
+##     df.vds[,miss.names.wim] <- NA
 
-    wimsites.names <-  names(bigdata)
-    ## vds.names <- names(df.vds)
-    miss.names.wim <- setdiff(wimsites.names,vds.names)
-    miss.names.vds <- setdiff(vds.names,wimsites.names)
-    ## could be more lanes at the VDS site, for example
-    if(length(miss.names.vds)>0){
-        bigdata[,miss.names.vds] <- NA
-    }
-    ## of course this will be necessary, as the wimsites have truck
-    ## data and the vds does not
-    df.vds[,miss.names.wim] <- NA
+##     ## merge vds into bigdata
+##     bigdata <- rbind(bigdata,df.vds)
+##     miss.names.vds <- union(miss.names.vds,c('vds_id'))
+##     i.hate.r <- c(miss.names.vds,'nr1') ## need a dummy index or R will simplify
+##     holding.pattern <- bigdata[,i.hate.r]
 
-    ## merge vds into bigdata
-    bigdata <- rbind(bigdata,df.vds)
-    miss.names.vds <- union(miss.names.vds,c('vds_id'))
-    i.hate.r <- c(miss.names.vds,'nr1') ## need a dummy index or R will simplify
-    holding.pattern <- bigdata[,i.hate.r]
+##     this.vds <- bigdata['vds_id'] == vds_id
+##     ## this.vds <- !is.na(this.vds)  ## lordy I hate when NA isn't falsey
 
-    this.vds <- bigdata['vds_id'] == vds_id
-    ## this.vds <- !is.na(this.vds)  ## lordy I hate when NA isn't falsey
+##     ## exclude as id vars for now, okay?? test and see
+##     ## for(i in miss.names.vds){
+##     ##     bigdata[,i] <- NULL
+##     ## }
 
-    ## exclude as id vars for now, okay?? test and see
-    ## for(i in miss.names.vds){
-    ##     bigdata[,i] <- NULL
-    ## }
+##     ## improve imputation?
+##     ## add volume times occupancy artificial variable now
 
-    ## improve imputation?
-    ## add volume times occupancy artificial variable now
+##     occ.pattern <- "^o(l|r)\\d$"
+##     occ.vars <-  grep( pattern=occ.pattern,x=names(bigdata),perl=TRUE,value=TRUE)
+##     vol.pattern <- "^n(l|r)\\d$"
+##     vol.vars <-  grep( pattern=vol.pattern,x=names(bigdata),perl=TRUE,value=TRUE)
 
-    occ.pattern <- "^o(l|r)\\d$"
-    occ.vars <-  grep( pattern=occ.pattern,x=names(bigdata),perl=TRUE,value=TRUE)
-    vol.pattern <- "^n(l|r)\\d$"
-    vol.vars <-  grep( pattern=vol.pattern,x=names(bigdata),perl=TRUE,value=TRUE)
+##     names_o_n <- paste(occ.vars,'times',vol.vars,sep='_')
+##     bigdata[,names_o_n] <- bigdata[,occ.vars]*(bigdata[,vol.vars])
 
-    names_o_n <- paste(occ.vars,'times',vol.vars,sep='_')
-    bigdata[,names_o_n] <- bigdata[,occ.vars]*(bigdata[,vol.vars])
+##     ## bugfix.  vds amelia runs might have been done with improper
+##     ## limits on occ.  Very old runs only, but need to fix here
+##     occ.pattern <- "^o(l|r)\\d$"
+##     occ.vars <-  grep( pattern=occ.pattern,x=names(bigdata),perl=TRUE,value=TRUE)
+##     ## truncate mask
+##     toobig <-  !( bigdata[,occ.vars]<1 | is.na(bigdata[,occ.vars]) )
+##     bigdata[,occ.vars][toobig] <- 1
 
-    ## bugfix.  vds amelia runs might have been done with improper
-    ## limits on occ.  Very old runs only, but need to fix here
-    occ.pattern <- "^o(l|r)\\d$"
-    occ.vars <-  grep( pattern=occ.pattern,x=names(bigdata),perl=TRUE,value=TRUE)
-    ## truncate mask
-    toobig <-  !( bigdata[,occ.vars]<1 | is.na(bigdata[,occ.vars]) )
-    bigdata[,occ.vars][toobig] <- 1
+##     ## run amelia to impute missing (trucks)
+##     print('all set to impute')
 
-    ## run amelia to impute missing (trucks)
-    print('all set to impute')
+##     big.amelia <- fill.truck.gaps(bigdata,maxiter=maxiter)
 
-    big.amelia <- fill.truck.gaps(bigdata,maxiter=maxiter)
+##     df.amelia.c <- big.amelia$imputations[[1]][this.vds,]
+##     df.amelia.c[,miss.names.vds] <- holding.pattern[this.vds,miss.names.vds]
 
-    df.amelia.c <- big.amelia$imputations[[1]][this.vds,]
-    df.amelia.c[,miss.names.vds] <- holding.pattern[this.vds,miss.names.vds]
-
-    ## limit to what I did impute only
-    varnames <- names(df.amelia.c)
-    var.list <- names.munging(varnames)
-    keep.names <- setdiff(varnames,var.list$exclude.as.id.vars)
-    keep.names <- union(keep.names,c('ts','tod','day','vds_id'))
-    keep.names <- setdiff(keep.names,names_o_n)
+##     ## limit to what I did impute only
+##     varnames <- names(df.amelia.c)
+##     var.list <- names.munging(varnames)
+##     keep.names <- setdiff(varnames,var.list$exclude.as.id.vars)
+##     keep.names <- union(keep.names,c('ts','tod','day','vds_id'))
+##     keep.names <- setdiff(keep.names,names_o_n)
 
 
-    df.amelia.c <- df.amelia.c[,keep.names]
+##     df.amelia.c <- df.amelia.c[,keep.names]
 
-    if(length(big.amelia$imputations) > 1){
-        for(i in 2:length(big.amelia$imputations)){
-            temp <- big.amelia$imputations[[i]][this.vds,]
-            temp[,miss.names.vds] <- holding.pattern[this.vds,miss.names.vds]
-            temp <- temp[,keep.names]
-            df.amelia.c <- rbind(df.amelia.c,temp)
-        }
-    }
+##     if(length(big.amelia$imputations) > 1){
+##         for(i in 2:length(big.amelia$imputations)){
+##             temp <- big.amelia$imputations[[i]][this.vds,]
+##             temp[,miss.names.vds] <- holding.pattern[this.vds,miss.names.vds]
+##             temp <- temp[,keep.names]
+##             df.amelia.c <- rbind(df.amelia.c,temp)
+##         }
+##     }
 
-    df.agg.amelia <- calvadrscripts::wim.medianed.aggregate.df(df.amelia.c)
-    attach.files <- calvadrscripts::plot_wim.data(df.merged=df.agg.amelia
-                                                 ,site_no=vds_id
-                                                 ,direction=''
-                                                 ,year=year
-                                                 ,fileprefix='vdstruckimpute'
-                                                 ,subhead='\nVDS site imputed trucks'
-                                                 ,force.plot=force.plot
-                                                 ,trackingdb=parts
-                                                  )
-    if(length(attach.files) != 1){
-        for(f2a in c(attach.files)){
-            rcouchutils::couch.attach(parts,vds_id,f2a)
-        }
-    }
+##     df.agg.amelia <- calvadrscripts::wim.medianed.aggregate.df(df.amelia.c)
+##     attach.files <- calvadrscripts::plot_wim.data(df.merged=df.agg.amelia
+##                                                  ,site_no=vds_id
+##                                                  ,direction=''
+##                                                  ,year=year
+##                                                  ,fileprefix='vdstruckimpute'
+##                                                  ,subhead='\nVDS site imputed trucks'
+##                                                  ,force.plot=force.plot
+##                                                  ,trackingdb=parts
+##                                                   )
+##     if(length(attach.files) != 1){
+##         for(f2a in c(attach.files)){
+##             rcouchutils::couch.attach(parts,vds_id,f2a)
+##         }
+##     }
 
-    df.agg.amelia.l <- calvadrscripts::transpose.lanes.to.rows(df.agg.amelia)
+##     df.agg.amelia.l <- calvadrscripts::transpose.lanes.to.rows(df.agg.amelia)
 
-    ## okay, actually write the csv file
-    filename <- paste('vds_id',vds_id,'truck.imputed',year,'csv',sep='.')
-    ## don't clobber prior imputations
-    exists <- dir(output_path,filename)
-    tick <- 0
-    while(length(exists)==1){
-        tick = tick+1
-        filename <- paste('vds_id',vds_id,'truck.imputed',year,tick,'csv',sep='.')
-        ## don't overwrite files
-        exists <- dir(output_path,filename)
-    }
-    file <- paste(output_path,filename,sep='/')
+##     ## okay, actually write the csv file
+##     filename <- paste('vds_id',vds_id,'truck.imputed',year,'csv',sep='.')
+##     ## don't clobber prior imputations
+##     exists <- dir(output_path,filename)
+##     tick <- 0
+##     while(length(exists)==1){
+##         tick = tick+1
+##         filename <- paste('vds_id',vds_id,'truck.imputed',year,tick,'csv',sep='.')
+##         ## don't overwrite files
+##         exists <- dir(output_path,filename)
+##     }
+##     file <- paste(output_path,filename,sep='/')
 
-    write.csv(df.agg.amelia.l,file=file,row.names = FALSE)
+##     write.csv(df.agg.amelia.l,file=file,row.names = FALSE)
 
-    ## load the file and check that it is okay?
+##     ## load the file and check that it is okay?
 
 
 })
@@ -207,8 +207,7 @@ test_that(
                                   output_path=path,
                                   maxiter=200,
                                   trackingdb=parts)
-        ## second time through, expect that the filename has been incremented to 1
-        testthat::expect_match(result,'truck.imputed.2012.1.csv$')
+        testthat::expect_match(result,'truck.imputed.2012.csv$')
         result <- impute.vds.site(vds_id=vds_id,
                                   wim_pairs=wim_pairs,
                                   year=year,
@@ -216,8 +215,8 @@ test_that(
                                   output_path=path,
                                   maxiter=200,
                                   trackingdb=parts)
-        ## second time through, expect that the filename has been incremented to 2
-        testthat::expect_match(result,'truck.imputed.2012.2.csv$')
+        ## second time through, expect that the filename has been incremented
+        testthat::expect_match(result,'truck.imputed.2012.1.csv$')
 
         saved_chain_lengths <- rcouchutils::couch.check.state(year=year,id=311903,state='truckimputation_chain_lengths',db=parts)
         saved_max_iterations <- rcouchutils::couch.check.state(year=year,id=311903,state='truckimputation_max_iterations',db=parts)
