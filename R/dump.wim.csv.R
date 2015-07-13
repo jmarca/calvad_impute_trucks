@@ -1,31 +1,3 @@
-    res <- couch.allDocs(dbname,)
-
-    pairdocs <- rcouchutils::couch.allDocs(db=trackingdb
-                                          ,query=list(
-                                               'startkey'=paste('%5b',year,'%2c%22',cdb.wimid,'%22%5d',sep='')
-                                               'endkey'=paste('%5b',year,'%2c%22',cdb.wimid,'\ufff0%22%5d',sep='')
-                                              ,'reduce'='false')
-                                          ,view='_design/vds/_view/pairRData'
-                                      ,include.docs = FALSE)
-    ## dissect the response
-    rows <- docs$rows
-    records <- sapply(rows,function(r){
-        ## parse out wim info
-        x = r$key[[3]]
-        m <- regexec("^wim\\.([0-9]+)\\.([NSEW])",x)
-        wim.info <- regmatches(x,m)[[1]]
-        return (list('year'=as.numeric(r$key[[1]]),
-                     'vds_id'=as.numeric(r$key[[2]]),
-                     'doc'=r$key[[3]],
-                     'wim_id'=as.integer(wim.info[2]),
-                     'direction'=wim.info[3]
-                     ))
-    })
-    if(length(records)==0){
-        return(data.frame())
-    }
-
-
 ##' Dump WIM imputation data to CSV file
 ##'
 ##' WIM sites can be either paired with a VDS site or not.  They need
@@ -50,20 +22,45 @@ dump.wim.csv <- function(wim_site,wim_dir,year,
     cdb.wimid <- paste('wim',wim_site,wim_dir,sep='.')
 
     ## two cases.  A pair, or not.  If a pair, get the paired combo from couchdb
+    possible.pairing <-
+        calvadrscripts::get.vds.paired.to.wim(year=year,
+                                              site_no=wim_site,
+                                              direction = wim_dir,
+                                              trackingdb=trackingdb)
+    df.merged <- NULL
+    if(dim(possible.pairing)[0] > 0){
+        vds_id <- possible.pairing$vds_id
+        att_doc <- possible.pairing$doc
+        result <- rcouchutils::couch.get.attachment(db=trackingdb,
+                                                     docname=vds_id,
+                                                    attachment = att_doc)
+        nm <- names(result)[1]
+        df.merged <- result[[1]][[nm]]
+    }else{
+        ## no already-merged pair
+        ## get wim self-imputation result
+        df.wim.imputed <-
+            calvadrscripts::get.amelia.wim.file.local(site_no=wim_site
+                                                     ,year=year
+                                                     ,direction=wim_dir
+                                                     ,path=wim_path)
+        ## TODO
+        ##
+        ## might want to think about imputing most likely n and o
+        ## based on other WIM-VDS pairings, using same approach as for
+        ## VDS truck imputation. I thought I had code to do that
+        ## already, but I can't find it yet in bdp
 
-    ## get wim self-imputation result
-    df.wim.imputed <- calvadrscripts::get.amelia.wim.file.local(site_no=wim_site
-                                                               ,year=year
-                                                               ,direction=wim_dir
-                                                               ,path=wim_path)
+        if( length(df.wim.imputed) == 1 ){
+            print(paste("amelia run for wim not good",df.wim.imputed))
+            quit('no',1)
+        }
 
-    if( length(df.wim.imputed) == 1 ){
-        print(paste("amelia run for wim not good",df.wim.imputed))
-        quit('no',1)
+
+        df.merged <- calvadrscripts::condense.amelia.output(df.wim.imputed)
     }
 
-
-    df.merged <- calvadrscripts::condense.amelia.output(df.wim.imputed)
+    ## and now, continue the same in both cases
 
     ## add the site id to the data
     df.merged$site_dir <- cdb.wimid
