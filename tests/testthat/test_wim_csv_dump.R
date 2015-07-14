@@ -1,12 +1,8 @@
 config <- rcouchutils::get.config(Sys.getenv('RCOUCHUTILS_TEST_CONFIG'))
 parts <- c('wim','csv','dump')
 rcouchutils::couch.makedb(parts)
+
 path <- './files'
-output_path <- './files'
-year <- 2012
-
-force.plot <- TRUE
-
 file <- paste(path,'wim.12.S.vdsid.767366.2012.paired.RData',sep='/')
 calvadmergepairs::couch.put.merged.pair(trackingdb=parts,
                       vds.id=767366,
@@ -16,12 +12,24 @@ calvadmergepairs::couch.put.merged.pair(trackingdb=parts,
                       vds.id=767367,
                       file=file)
 
-res <- couch.put.view(dbname,'vds','./files/vds.json')
-res <- couch.put.view(dbname,'wim','./files/wim.json')
+res <- rcouchutils::couch.put.view(parts,'vds','./files/vds.json')
+res <- rcouchutils::couch.put.view(parts,'wim','./files/wim.json')
+
+year <- 2012
+output_path <- './files/csv'
+dir.create(output_path)
 
 test_that(
     "will dump the paired WIM-VDS from couchdb",{
 
+        wim_site <- 12
+        wim_dir <- 'S'
+        year <- 2012
+        res <- dump.wim.csv(wim_site,wim_dir,year,
+                            wim_path=path,
+                            output_path=output_path,
+                            trackingdb = parts)
+        expect_that(res,equals('./files/csv/wim.12.S.truck.imputed.2012.csv'))
     })
 
 test_that(
@@ -30,4 +38,6 @@ test_that(
     })
 
 
-# rcouchutils::couch.deletedb(parts)
+unlink(output_path,recursive=TRUE)
+
+## rcouchutils::couch.deletedb(parts)

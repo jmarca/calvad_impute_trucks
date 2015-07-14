@@ -28,7 +28,8 @@ dump.wim.csv <- function(wim_site,wim_dir,year,
                                               direction = wim_dir,
                                               trackingdb=trackingdb)
     df.merged <- NULL
-    if(dim(possible.pairing)[0] > 0){
+    if(dim(possible.pairing)[1] > 0){
+        print('get from couchdb')
         vds_id <- possible.pairing$vds_id
         att_doc <- possible.pairing$doc
         result <- rcouchutils::couch.get.attachment(db=trackingdb,
@@ -37,6 +38,7 @@ dump.wim.csv <- function(wim_site,wim_dir,year,
         nm <- names(result)[1]
         df.merged <- result[[1]][[nm]]
     }else{
+        print('get from impute output')
         ## no already-merged pair
         ## get wim self-imputation result
         df.wim.imputed <-
@@ -65,7 +67,7 @@ dump.wim.csv <- function(wim_site,wim_dir,year,
     ## add the site id to the data
     df.merged$site_dir <- cdb.wimid
 
-    df.merged.l <- transpose.lanes.to.rows(df.merged)
+    df.merged.l <- calvadrscripts::transpose.lanes.to.rows(df.merged)
 
     keepnames <- c('tod','day','ts','site_dir','lane','heavyheavy',
                    'hh_weight','hh_axles','hh_speed','nh_weight',
@@ -79,8 +81,9 @@ dump.wim.csv <- function(wim_site,wim_dir,year,
     write.csv(df.merged.l[,keepnames],file=file,row.names = FALSE)
 
     rcouchutils::couch.set.state(year=year
-                                ,detector.id=cdb.wimid
-                                ,doc=list('extract_to_csv'='finished'))
+                                ,id=cdb.wimid
+                                ,doc=list('extract_to_csv'='finished')
+                                ,db=trackingdb)
 
     return (file)
 
