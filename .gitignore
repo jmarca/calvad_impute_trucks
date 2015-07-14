@@ -1,10 +1,9 @@
-/test.config.json
-/config.json
+test.config.json
+config.json
 /components/
 *~
 /node_modules/
-/.Rhistory
-/.cookies.txt
-/tests/testthat/.cookies.txt
+.Rhistory
+.cookies.txt
 /man/
-/tests/testthat/images/
+**/images/
