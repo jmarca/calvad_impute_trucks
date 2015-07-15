@@ -27,10 +27,11 @@ before(function(done){
         config = c
         var q = queue()
         var opts =_.extend({'year':2012},c)
+        q.defer(vds_imputed,opts)
         q.defer(wim_imputed,opts)
         q.defer(wim_merged,opts)
-        q.defer(vds_imputed,opts)
-        q.await(function(e,w_i,w_m,v){
+        q.await(function(e,v,w_i,w_m){
+            console.log('done with prep')
             config.wim_imputed_sites = w_i
             config.wim_merged_sites = w_m
             config.vds_sites = v
@@ -47,7 +48,7 @@ describe('query wim vds distances',function(){
         config.wim_sites = config.wim_imputed_sites
         create_dist_table(config,function(e,r){
             var numrecords = Object.keys(r).length
-            numrecords.should.equal(5865)
+            numrecords.should.equal(5873)
             Object.keys(r).forEach(function(vdsid){
                 var len = r[vdsid].length
                 len.should.equal(140 - 9)  // in 2012, 140 wim sites
@@ -63,7 +64,7 @@ describe('query wim vds distances',function(){
         config.wim_sites = config.wim_merged_sites
         create_dist_table(config,function(e,r){
             var numrecords = Object.keys(r).length
-            numrecords.should.equal(5865)
+            numrecords.should.equal(5873)
             Object.keys(r).forEach(function(vdsid){
                 var len = r[vdsid].length
                 len.should.equal(85)
