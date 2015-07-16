@@ -1,7 +1,6 @@
 /* global require console process describe it */
 
 var should = require('should')
-var create_dist_table = require('../lib/create_vds_wim_dist_table.js')
 var create_ww_dist_table = require('../lib/create_wim_wim_dist_table.js')
 var path    = require('path')
 var rootdir = path.normalize(__dirname)
