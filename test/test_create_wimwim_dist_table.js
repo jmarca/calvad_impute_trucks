@@ -2,6 +2,7 @@
 
 var should = require('should')
 var create_dist_table = require('../lib/create_vds_wim_dist_table.js')
+var create_ww_dist_table = require('../lib/create_wim_wim_dist_table.js')
 var path    = require('path')
 var rootdir = path.normalize(__dirname)
 
@@ -27,14 +28,12 @@ before(function(done){
         config = c
         var q = queue()
         var opts =_.extend({'year':2012},c)
-        q.defer(vds_imputed,opts)
         q.defer(wim_imputed,opts)
         q.defer(wim_merged,opts)
-        q.await(function(e,v,w_i,w_m){
+        q.await(function(e,w_i,w_m){
             console.log('done with prep')
             config.wim_imputed_sites = w_i
             config.wim_merged_sites = w_m
-            config.vds_sites = v
             return done()
 
         })
@@ -43,35 +42,21 @@ before(function(done){
     return null
 })
 
-describe('query wim vds distances',function(){
+describe('query wim wim distances',function(){
     it('should get distance table for wim vds',function(done){
         config.wim_sites = config.wim_imputed_sites
-        create_dist_table(config,function(e,r){
+        console.log('wim_imputed_sites length',config.wim_imputed_sites.length)
+        console.log('wim_merged_sites length',config.wim_merged_sites.length)
+        create_ww_dist_table(config,function(e,r){
             var numrecords = Object.keys(r).length
-            numrecords.should.equal(5873)
-            Object.keys(r).forEach(function(vdsid){
-                var len = r[vdsid].length
-                len.should.equal(140 - 9)  // in 2012, 140 wim sites
-                                           // imputed fine, but 9 are
-                                           // above 800 series
-                                           // (pre-pass type sites)
+            numrecords.should.equal(46)    // 55 imputed but
+                                           // non-merged sites minus 9
+                                           // 800 series sites === 46
+            Object.keys(r).forEach(function(site_no){
+                var len = r[site_no].length
+                len.should.equal(85)       // 85 merged sites
                 return null
             })
-            return done()
-        })
-    })
-    it('should get distance table for wim merged, vds',function(done){
-        config.wim_sites = config.wim_merged_sites
-        create_dist_table(config,function(e,r){
-            var numrecords = Object.keys(r).length
-            numrecords.should.equal(5873)
-            Object.keys(r).forEach(function(vdsid){
-                var len = r[vdsid].length
-                len.should.equal(85)
-                return null
-            })
-            // var firstvds = Object.keys(r)[0]
-            // console.log(r[firstvds].slice(0,10))
             return done()
         })
     })
