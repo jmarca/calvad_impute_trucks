@@ -38,14 +38,14 @@ describe('get vds truckimputed',function(){
                 var truck_todo = r.length
                 truck_todo.should.be.below(ready_vds_count)
                 // actually this will change as I process
-            // r.should.have.lengthOf(494)
-            r.forEach(function(row){
-                row.should.have.property('key')
-                row.key[1].should.eql('unprocessed')
-                return null
+                // r.should.have.lengthOf(494)
+                r.forEach(function(row){
+                    row.should.have.property('key')
+                    row.key[1].should.eql('unprocessed')
+                    return null
+                })
+                return done()
             })
-            return done()
         })
     })
-})
 })

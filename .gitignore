@@ -7,3 +7,4 @@ config.json
 .cookies.txt
 /man/
 **/images/
+.tern-port

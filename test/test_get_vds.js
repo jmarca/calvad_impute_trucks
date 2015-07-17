@@ -17,7 +17,7 @@ describe('get vds',function(){
                ,function(e,r){
                     should.not.exist(e)
                     should.exist(r)
-                    r.should.have.lengthOf(494)
+                    r.should.have.lengthOf(5392)
                     r.forEach(function(task){
                         task.should.have.property('funky','music')
                         task.should.have.property('year',2010)
