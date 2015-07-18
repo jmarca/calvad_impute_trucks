@@ -54,10 +54,11 @@ impute.wim.n.o <- function(site_no,wim_dir,wim_pairs,year,
 
     ## load the imputed WIM site data
     df.wim.imputed <-
-            calvadrscripts::get.amelia.wim.file.local(site_no=wim_site
+            calvadrscripts::get.amelia.wim.file.local(site_no=site_no
                                                      ,year=year
                                                      ,direction=wim_dir
                                                      ,path=wim_path)
+    df.wim.imputed <- calvadrscripts::wim.medianed.aggregate.df(df.wim.imputed)
 
     ## so that I can pluck out just this site's data at the end of imputation
     df.wim.imputed[,'cdb.wimid'] <- cdb.wimid
@@ -81,28 +82,33 @@ impute.wim.n.o <- function(site_no,wim_dir,wim_pairs,year,
         stop()
     }
 
-    wimsites.names <-  names(bigdata)
+    bigdata.names <-  names(bigdata)
     ## vds.names <- names(df.vds)
-    miss.names.wim <- setdiff(wimsites.names,vds.names)
-    miss.names.vds <- setdiff(vds.names,wimsites.names)
+    miss.names.wim <- setdiff(bigdata.names,wim.names)
+    miss.names.bigdata <- setdiff(wim.names,bigdata.names)
     ## could be more lanes at the VDS site, for example
-    if(length(miss.names.vds)>0){
-        bigdata[,miss.names.vds] <- NA
+    if(length(miss.names.bigdata)>0){
+        print('names in wim, not in bigdata')
+        print(paste(miss.names.bigdata,collapse=', ',sep=', '))
+        bigdata[,miss.names.bigdata] <- NA
     }
-    ## of course this will be necessary, as the wimsites have truck
-    ## data and the vds does not
-    df.vds[,miss.names.wim] <- NA
+    ## of course this will be necessary, as the bigdata sets have truck
+    ## and vol/occ, and the wim site has no vol occ
+    print('names in bigdata, not in wim')
+    print(paste(miss.names.wim,collapse=', ',sep=', '))
+    df.wim.imputed[,miss.names.wim] <- NA
 
     ## merge vds into bigdata
-    bigdata <- rbind(bigdata,df.vds)
+    bigdata <- rbind(bigdata,df.wim.imputed)
     ## miss.names.vds <- union(miss.names.vds,c('vds_id'))
-    i.hate.r <- c(miss.names.vds,'nr1') ## need a dummy index or R will simplify
+    i.hate.r <- c(miss.names.wim,'heavyheavy_r1') ## need a dummy index or R will simplify
     holding.pattern <- bigdata[,i.hate.r]
 
-    this.vds <- bigdata['vds_id'] == vds_id
+    this.site <- bigdata['cdb.wimid'] == cdb.wimid
+
 
     ## exclude as id vars for now, okay?? test and see
-    for(i in miss.names.vds){
+    for(i in c('cdb.wimid','vds_id','obs_count')){
         bigdata[,i] <- NULL
     }
 
@@ -117,18 +123,11 @@ impute.wim.n.o <- function(site_no,wim_dir,wim_pairs,year,
     names_o_n <- paste(occ.vars,'times',vol.vars,sep='_')
     bigdata[,names_o_n] <- bigdata[,occ.vars]*(bigdata[,vol.vars])
 
-    ## bugfix.  vds amelia runs might have been done with improper
-    ## limits on occ.  Very old runs only, but need to fix here
-    occ.pattern <- "^o(l|r)\\d$"
-    occ.vars <-  grep( pattern=occ.pattern,x=names(bigdata),perl=TRUE,value=TRUE)
-    ## truncate mask
-    toobig <-  !( bigdata[,occ.vars]<1 | is.na(bigdata[,occ.vars]) )
-    bigdata[,occ.vars][toobig] <- 1
-
     ## run amelia to impute missing (trucks)
     print('all set to impute')
 
-    big.amelia <- fill.truck.gaps(bigdata,maxiter=maxiter)
+    big.amelia <- fill.vo.gaps(bigdata,maxiter=maxiter)
+     ## big.amelia <- fill.truck.gaps(bigdata,maxiter=maxiter)
 
     ## write out the imputation chains information to couchdb for later analysis
     ## and also generate plots as attachments
