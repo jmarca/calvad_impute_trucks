@@ -41,8 +41,8 @@ impute.wim.n.o <- function(site_no,wim_dir,wim_pairs,year,
                            force.plot=TRUE){
 
     print('hello from impute.wim.n.o')
-    cdb.wimid <- paste('wim',site_no,wim_dir,sep='.')
-    print(paste('processing ',cdb.wimid,'paired to',
+    cdb_wimid <- paste('wim',site_no,wim_dir,sep='.')
+    print(paste('processing ',cdb_wimid,'paired to',
                 paste(wim_pairs,collapse='; '),collapse=' '))
 
     ## if no neighbors, die now
@@ -61,7 +61,7 @@ impute.wim.n.o <- function(site_no,wim_dir,wim_pairs,year,
     df.wim.imputed <- calvadrscripts::wim.medianed.aggregate.df(df.wim.imputed)
 
     ## so that I can pluck out just this site's data at the end of imputation
-    df.wim.imputed[,'cdb.wimid'] <- cdb.wimid
+    df.wim.imputed[,'vds_id'] <- cdb_wimid
 
     ## pick off the lane names so as to drop irrelevant lanes in the loop below
     wim.names <- names(df.wim.imputed)
@@ -88,27 +88,23 @@ impute.wim.n.o <- function(site_no,wim_dir,wim_pairs,year,
     miss.names.bigdata <- setdiff(wim.names,bigdata.names)
     ## could be more lanes at the VDS site, for example
     if(length(miss.names.bigdata)>0){
-        print('names in wim, not in bigdata')
-        print(paste(miss.names.bigdata,collapse=', ',sep=', '))
         bigdata[,miss.names.bigdata] <- NA
     }
     ## of course this will be necessary, as the bigdata sets have truck
     ## and vol/occ, and the wim site has no vol occ
-    print('names in bigdata, not in wim')
-    print(paste(miss.names.wim,collapse=', ',sep=', '))
     df.wim.imputed[,miss.names.wim] <- NA
 
     ## merge vds into bigdata
     bigdata <- rbind(bigdata,df.wim.imputed)
-    ## miss.names.vds <- union(miss.names.vds,c('vds_id'))
-    i.hate.r <- c(miss.names.wim,'heavyheavy_r1') ## need a dummy index or R will simplify
-    holding.pattern <- bigdata[,i.hate.r]
 
-    this.site <- bigdata['cdb.wimid'] == cdb.wimid
+    ## i.hate.r <- c(miss.names.wim,'heavyheavy_r1') ## need a dummy index or R will simplify
+    ## holding.pattern <- bigdata[,i.hate.r]
+
+    this.site <- bigdata['vds_id'] == cdb_wimid
 
 
     ## exclude as id vars for now, okay?? test and see
-    for(i in c('cdb.wimid','vds_id','obs_count')){
+    for(i in c('obs_count')){ ## keep vds_id for now
         bigdata[,i] <- NULL
     }
 
@@ -127,69 +123,43 @@ impute.wim.n.o <- function(site_no,wim_dir,wim_pairs,year,
     print('all set to impute')
 
     big.amelia <- fill.vo.gaps(bigdata,maxiter=maxiter)
-     ## big.amelia <- fill.truck.gaps(bigdata,maxiter=maxiter)
+    df.agg.amelia <- c.a.o_wrapper(big.amelia,
+                                   cdb_wimid,
+                                   op=median)
 
-    ## write out the imputation chains information to couchdb for later analysis
-    ## and also generate plots as attachments
+    return (df.agg.amelia)
+}
+
+post_impute_handling <- function(aout.agg,cdb_wimid){
 
 
-    ## extract just this vds_id data and
-    ## put back any variables I took out above
+    plotvars <- grep('^(o|n)(r|l)\\d',x=names(aout.agg),perl=TRUE,value=TRUE)
 
-    df.amelia.c <- big.amelia$imputations[[1]][this.vds,]
 
-    if(length(miss.names.vds)>0){
-        df.amelia.c[,miss.names.vds] <- holding.pattern[this.vds,miss.names.vds]
-    }
+    subhead='\npost-imputation data'
+    fileprefix='imputed'
+    attach.files <- plot_vds.data(aout.agg,cdb_wimid,year,
+                                  fileprefix,subhead,
+                                  force.plot=force.plot,
+                                  path=path,
+                                  trackingdb=trackingdb)
 
-    ## limit to what I did impute only
-    varnames <- names(df.amelia.c)
-    var.list <- names.munging(varnames)
-    keep.names <- setdiff(varnames,var.list$exclude.as.id.vars)
-    keep.names <- union(keep.names,c('ts','tod','day','vds_id'))
-    keep.names <- setdiff(keep.names,names_o_n)
-
-    df.amelia.c <- df.amelia.c[,keep.names]
-
-    if(length(big.amelia$imputations) > 1){
-        for(i in 2:length(big.amelia$imputations)){
-            temp <- big.amelia$imputations[[i]][this.vds,]
-            if(length(miss.names.vds)>0){
-                temp[,miss.names.vds] <- holding.pattern[this.vds,miss.names.vds]
-            }
-            temp <- temp[,keep.names]
-            df.amelia.c <- rbind(df.amelia.c,temp)
-        }
-    }
-
-    df.agg.amelia <- calvadrscripts::wim.medianed.aggregate.df(df.amelia.c)
-    attach.files <- calvadrscripts::plot_wim.data(df.merged=df.agg.amelia
-                                                 ,site_no=vds_id
-                                                 ,direction=''
-                                                 ,year=year
-                                                 ,fileprefix='vdstruckimpute'
-                                                 ,subhead='\nVDS site imputed trucks'
-                                                 ,force.plot=force.plot
-                                                 ,trackingdb=trackingdb
-                                                  )
     if(length(attach.files) != 1){
         for(f2a in c(attach.files)){
-            rcouchutils::couch.attach(trackingdb,vds_id,f2a)
+            rcouchutils::couch.attach(trackingdb,cdb_wimid,f2a)
         }
     }
 
-    ## a lot of NA values get produced.  whatever. left lane trucks tend not to exist
-    ## df.amelia.c.l <- calvadrscripts::transpose.lanes.to.rows(df.amelia.c)
-    df.agg.amelia.l <- calvadrscripts::transpose.lanes.to.rows(df.agg.amelia)
+    aout.agg.l <- calvadrscripts::transpose.lanes.to.rows(aout.agg)
 
     ## okay, actually write the csv file
-    filename <- paste('vds_id',vds_id,'truck.imputed',year,'csv',sep='.')
+    filename <- paste('site_no',site_no,'vo.imputed',year,'csv',sep='.')
     ## don't clobber prior imputations
     exists <- dir(output_path,filename)
     tick <- 0
     while(length(exists)==1){
         tick = tick+1
-        filename <- paste('vds_id',vds_id,'truck.imputed',year,tick,'csv',sep='.')
+        filename <- paste('site_no',site_no,'truck.imputed',year,tick,'csv',sep='.')
         ## don't overwrite files
         exists <- dir(output_path,filename)
     }
@@ -199,15 +169,11 @@ impute.wim.n.o <- function(site_no,wim_dir,wim_pairs,year,
     ## aggregate to median, save as CSV, and/or write to couchdb right
     ## here
 
-    write.csv(df.agg.amelia.l,file=file,row.names = FALSE)
-    ## run perl code to slurp output
-    ## system2('perl',paste(' -w /home/james/repos/bdp/parse_imputed_vds_trucks_to_couchDB.pl --cdb=imputed/breakup/ --file=',file,sep='')
-    ##         ,stdout = FALSE, stderr = paste(output_path,paste(vds_id,year,'parse_output.txt',sep='.'),sep='/'),wait=FALSE)
-
+    write.csv(aout.agg.l,file=file,row.names = FALSE)
 
 
     ## last thing is to tag the "done state" in couchdb
-    calvadrscripts::store.amelia.chains(big.amelia,year,vds_id,'truckimputation',maxiter=maxiter,db=trackingdb)
+    calvadrscripts::store.amelia.chains(big.amelia,year,cdb_wimid,'vo_imputation',maxiter=maxiter,db=trackingdb)
 
     return (file)
 

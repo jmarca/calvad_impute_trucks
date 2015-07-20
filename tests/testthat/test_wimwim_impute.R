@@ -8,9 +8,19 @@ maxiter <- 200
 
 force.plot <- TRUE
 
-file <- paste(path,'/wim.64.W.vdsid.400071.2012.paired.RData',sep='/')
+file <- paste(path,'wim.64.W.vdsid.400071.2012.paired.RData',sep='/')
 calvadmergepairs::couch.put.merged.pair(trackingdb=parts,
                       vds.id=400071,
+                      file=file)
+
+file <- paste(path,'wim.12.S.vdsid.767366.2012.paired.RData',sep='/')
+calvadmergepairs::couch.put.merged.pair(trackingdb=parts,
+                      vds.id=767366,
+                      file=file)
+
+file <- paste(path,'wim.13.N.vdsid.767367.2012.paired.RData',sep='/')
+calvadmergepairs::couch.put.merged.pair(trackingdb=parts,
+                      vds.id=767367,
                       file=file)
 
 site_no <- 81
@@ -22,66 +32,49 @@ res <- rcouchutils::couch.put.view(parts,'wim',paste(path,'wim.json',sep='/'))
 
 test_that(
     "can impute trucks files",{
-    wim.pairs <- list()
-    wim.pairs[[1]] <- list(vds_id=400071,wim_site=64,direction='W')
-    result <- impute.wim.n.o(site_no = wim_site,
-                             wim_dir=wim_dir,
-                             wim_pairs=wim_pairs,
-                             year=year,
-                             wim_path=path,
-                             output_path=path,
-                             maxiter=200,
-                             trackingdb=parts)
-    testthat::expect_match(result,'truck.imputed.2012.csv$')
-    result <- impute.vds.site(vds_id=vds_id,
-                                  wim_pairs=wim_pairs,
-                                  year=year,
-                                  vds_path=path,
-                                  output_path=path,
-                                  maxiter=200,
-                                  trackingdb=parts)
-        ## second time through, expect that the filename has been incremented
-        testthat::expect_match(result,'truck.imputed.2012.1.csv$')
+        wim_pairs <- list()
+        wim_pairs[[1]] <- list(vds_id=400071,wim_site=64,direction='W')
+        wim_pairs[[1]] <- list(vds_id=767366,wim_site=12,direction='S')
+        wim_pairs[[1]] <- list(vds_id=767367,wim_site=13,direction='N')
 
-        saved_chain_lengths <- rcouchutils::couch.check.state(year=year,id=311903,state='truckimputation_chain_lengths',db=parts)
-        saved_max_iterations <- rcouchutils::couch.check.state(year=year,id=311903,state='truckimputation_max_iterations',db=parts)
-        testthat::expect_more_than(object=mean(saved_chain_lengths),expected=50)
-        testthat::expect_less_than(object=mean(saved_chain_lengths),expected=80)
-        testthat::expect_equal(object=saved_max_iterations,expected=0)
+        df.voimputed.agg <- impute.wim.n.o(site_no = site_no,
+                                           wim_dir=site_dir,
+                                           wim_pairs=wim_pairs,
+                                           year=year,
+                                           wim_path=path,
+                                           output_path=path,
+                                           maxiter=200,
+                                           trackingdb=parts)
 
-        ## expect that the six post-imputation plots are there too
-        doc <- rcouchutils::couch.get(parts,vds_id)
-        attachments <- doc[['_attachments']]
-        testthat::expect_that(attachments,testthat::is_a('list'))
-        testthat::expect_that(sort(names(attachments)),
-                              testthat::equals(
-                                  c(paste(vds_id,year,
-                                          'vdstruckimpute',
-                                          c("001.png",
-                                            "002.png",
-                                            "003.png",
-                                            "004.png",
-                                            "005.png",
-                                            "006.png"),
-                                          sep='_')
-                                    ))
-                              )
 
-        if(requireNamespace("readr", quietly = TRUE)){
-            csvdf <- readr::read_csv(
-                file=paste(path,'vds_id.311903.truck.imputed.2012.1.csv',sep='/'),
-                col_types='ciiiddddcdddddddd')
-            csvdf$ts <- readr::parse_datetime(csvdf$ts,"%Y-%m-%d %H:%M:%S",tz="UTC")
-            expect_that(table(csvdf$lane)[['l1']],equals(8784))
-            expect_that(table(csvdf$lane)[['r1']],equals(8784))
-            expect_that(table(csvdf$lane)[['r2']],equals(8784))
-            expect_that(levels(as.factor(csvdf$lane)),equals(c('l1','r1','r2')))
-            expect_that(dim(csvdf),equals(c(26352,17)))
+
+        ## content checks
+        df.wim.imputed <-
+            calvadrscripts::get.amelia.wim.file.local(site_no=site_no
+                                                     ,year=year
+                                                     ,direction=site_dir
+                                                     ,path=path)
+        df.wim.imputed <- calvadrscripts::wim.medianed.aggregate.df(df.wim.imputed)
+        df.wim.imputed[,'vds_id'] <- cdb_wimid
+        ## not used
+        df.wim.imputed[,'obs_count'] <- NULL
+
+        ## there should be no diff between pre and post imputation for WIM data
+        volocc_vars <- grep('^(o|n)(r|l)\\d',x=names(df.wim.imputed),perl=TRUE,value=TRUE)
+
+        for(column in setdiff(names(df.wim.imputed),volocc_vars)){
+            expect_that(length(df.wim.imputed[,column]),
+                        equals(length(df.voimputed.agg[,column])))
+            expect_that(summary(df.wim.imputed[,column]),
+                        equals(summary(df.voimputed.agg[,column])))
         }
+
     })
 
 
-unlink(paste(path,'/vds_id.',vds_id,'.truck.imputed.',year,'.',c(1,2,3),'.csv',sep=''))
-unlink(paste(path,'/vds_id.',vds_id,'.truck.imputed.',year,'.csv',sep=''))
-unlink(paste(path,'/images'),recursive = TRUE)
-rcouchutils::couch.deletedb(parts)
+
+
+## unlink(paste(path,'/vds_id.',vds_id,'.truck.imputed.',year,'.',c(1,2,3),'.csv',sep=''))
+## unlink(paste(path,'/vds_id.',vds_id,'.truck.imputed.',year,'.csv',sep=''))
+## unlink(paste(path,'/images'),recursive = TRUE)
+## rcouchutils::couch.deletedb(parts)
