@@ -110,8 +110,19 @@ if('' == output_path || is.null(output_path)){
     output_path <- wim_path
 }
 
+image_path <- Sys.getenv(c('CALVAD_IMAGE_PATH'))[1]
+if('' == image_path || is.null(image_path)){
+    if(! is.null(config$calvad$imagepath) && config$calvad$imagepath != '' ){
+        image_path <- config$calvad$imagepath
+    }
+}
+if('' == image_path || is.null(image_path)){
+    print(paste('CALVAD_IMAGE_PATH environment variable is not set and no entry in config file under calvad:{imagepath:...}, so setting image path to','images'))
+    image_path <- 'images'
+}
+
 maxiter = Sys.getenv(c('CALVAD_WIMWIM_IMPUTE_MAXITER'))[1]
-if(is.null(maxiter)){
+if(is.null(maxiter) || is.na(maxiter)){
     maxiter=200
 }
 maxiter <- as.numeric(maxiter)
@@ -135,24 +146,31 @@ for(i in 1:length(w_p.df[,1])){
 }
 
 print(paste('calling impute with options',
-            paste(c(wim_site,wim_dir,
-                    wim_pairs,
-                    year,
-                    vds_path,
-                    output_path,
-                    maxiter,
-                    config$couchdb$trackingdb)
-                    ,collapse=' ',sep=',')
-                  ))
+            paste(c(site_no=wim_site,
+                    direction=wim_dir,
+                    wim_pairs=wim_pairs,
+                    year=year,
+                    wim_path=wim_path,
+                    output_path=output_path,
+                    maxiter=maxiter,
+                    trackingdb=config$couchdb$trackingdb
+                    ))))
 
-result <- impute.wimwim.site(site_no=wim_site,direction=wim_dir,
-                          wim_pairs=wim_pairs,
-                          year=year,
-                          wim_path=wim_path,
-                          output_path=output_path,
-                          maxiter=maxiter,
-                          trackingdb=config$couchdb$trackingdb
-                          )
+df.voimputed.agg <- impute.wim.n.o(site_no=wim_site,
+                                   wim_dir=wim_dir,
+                                   wim_pairs=wim_pairs,
+                                   year=year,
+                                   wim_path=wim_path,
+                                   maxiter=maxiter,
+                                   trackingdb=config$couchdb$trackingdb
+                                   )
+## now the post imputation stuff...plots and CSV dump
+result <- post_impute_handling(df.voimputed.agg,
+                               wim_site,wim_dir,year,
+                               plot_path=image_path,
+                               csv_path=output_path,
+                               trackingdb=config$couchdb$trackingdb
+                               )
 
 print(paste('imputation output saved to',result))
 quit(save='no',status=10)

@@ -30,15 +30,15 @@ fill.vo.gaps <- function(df
                             ,maxiter=200
                             ){
 
-  ## truncate negative values to zero
-  negatives <-  !( df>=0 | is.na(df) )
-  df[negatives] <- 0
+    ## truncate negative values to zero
+    negatives <-  !( df>=0 | is.na(df) )
+    df[negatives] <- 0
 
-  print('Imputation step; filling in the truck NAs in the data:')
-
+    print('Imputation step; filling in the WIM site volume, occ NAs')
 
     limits <- names_munging_for_vo(df=df)
 
+  ## print(summary(df))
 
     df.amelia <-
         Amelia::amelia(df,idvars=limits$exclude.as.id.vars,
