@@ -6,9 +6,8 @@
 ##' given the VDS site's observed volumes and occupancies.
 ##'
 ##' @title impute.wim.n.o
-##' @param vdsid the VDS id for the site where you want to impute
-##'     truck data
-##'
+##' @param site_no the WIM site number
+##' @param wim_dir the direction at the site
 ##' @param wim_pairs the list of "neighboring" WIM sites.  Each entry
 ##'     in this list should have three components: vds_id, wim_site,
 ##'     and direction.  For example,
@@ -21,12 +20,13 @@
 ##'     the moment, this is setup in the calling JS code.
 ##'
 ##' @param year the year for the analysis
-##' @param vds_path where to start looking for VDS data
-##' @param output_path where to write the output
+##' @param wim_path the path to start looking for WIM data
 ##' @param maxiter maximum iterations for Amelia run
 ##' @param trackingdb The couchdb tracking db.  Will fetch the WIM-VDS
 ##'     paired data from this database, and any issues will be noted
 ##'     here
+##'
+##' @param force.plot
 ##'
 ##' @return the file name for the dumped CSV file containing the
 ##'     results of the imputation
@@ -35,7 +35,6 @@
 ##'
 impute.wim.n.o <- function(site_no,wim_dir,wim_pairs,year,
                            wim_path,
-                           output_path,
                            maxiter,
                            trackingdb,
                            force.plot=TRUE){
@@ -123,6 +122,14 @@ impute.wim.n.o <- function(site_no,wim_dir,wim_pairs,year,
     print('all set to impute')
 
     big.amelia <- fill.vo.gaps(bigdata,maxiter=maxiter)
+    ## tag the "done state" in couchdb
+    calvadrscripts::store.amelia.chains(big.amelia,year,
+                                        cdb_wimid,
+                                        'vo_imputation',
+                                        maxiter=maxiter,
+                                        db=trackingdb)
+
+
     df.agg.amelia <- c.a.o_wrapper(big.amelia,
                                    cdb_wimid,
                                    op=median)
@@ -130,19 +137,35 @@ impute.wim.n.o <- function(site_no,wim_dir,wim_pairs,year,
     return (df.agg.amelia)
 }
 
-post_impute_handling <- function(aout.agg,cdb_wimid){
+##' After imputation, do stuff like generate plots and save the CSV.
+##'
+##' I split this from the impute routine because it makes testing
+##' easier.
+##' @title post_impute_handling
+##' @param aout.agg the amelia output
+##' @param site_no the WIM site number
+##' @param wim_dir the direction at the site
+##' @param year the year
+##' @param plot_path where to stick plots before they are written to couchdb
+##' @param csv_path where to write the CSV dump of the amelia output
+##' @param trackingdb the CouchDB tracking database
+##' @return the CSV file name
+##' @author James E. Marca
+##'
+post_impute_handling <- function(aout.agg,site_no,wim_dir,year,
+                                 plot_path='./images',
+                                 csv_path,trackingdb){
 
-
-    plotvars <- grep('^(o|n)(r|l)\\d',x=names(aout.agg),perl=TRUE,value=TRUE)
-
+    cdb_wimid <- paste('wim',site_no,wim_dir,sep='.')
 
     subhead='\npost-imputation data'
-    fileprefix='imputed'
-    attach.files <- plot_vds.data(aout.agg,cdb_wimid,year,
-                                  fileprefix,subhead,
-                                  force.plot=force.plot,
-                                  path=path,
-                                  trackingdb=trackingdb)
+    fileprefix='imputed_vo'
+    attach.files <- calvadrscripts::plot_vds.data(
+        aout.agg,cdb_wimid,year,
+        fileprefix,subhead,
+        force.plot=TRUE,
+        path=plot_path,
+        trackingdb=trackingdb)
 
     if(length(attach.files) != 1){
         for(f2a in c(attach.files)){
@@ -153,17 +176,17 @@ post_impute_handling <- function(aout.agg,cdb_wimid){
     aout.agg.l <- calvadrscripts::transpose.lanes.to.rows(aout.agg)
 
     ## okay, actually write the csv file
-    filename <- paste('site_no',site_no,'vo.imputed',year,'csv',sep='.')
+    filename <- paste('site_no',cdb_wimid,'vo.imputed',year,'csv',sep='.')
     ## don't clobber prior imputations
-    exists <- dir(output_path,filename)
+    exists <- dir(csv_path,filename)
     tick <- 0
     while(length(exists)==1){
         tick = tick+1
-        filename <- paste('site_no',site_no,'truck.imputed',year,tick,'csv',sep='.')
+        filename <- paste('site_no',cdb_wimid,'vo.imputed',year,tick,'csv',sep='.')
         ## don't overwrite files
-        exists <- dir(output_path,filename)
+        exists <- dir(csv_path,filename)
     }
-    file <- paste(output_path,filename,sep='/')
+    file <- paste(csv_path,filename,sep='/')
 
 
     ## aggregate to median, save as CSV, and/or write to couchdb right
@@ -171,9 +194,6 @@ post_impute_handling <- function(aout.agg,cdb_wimid){
 
     write.csv(aout.agg.l,file=file,row.names = FALSE)
 
-
-    ## last thing is to tag the "done state" in couchdb
-    calvadrscripts::store.amelia.chains(big.amelia,year,cdb_wimid,'vo_imputation',maxiter=maxiter,db=trackingdb)
 
     return (file)
 

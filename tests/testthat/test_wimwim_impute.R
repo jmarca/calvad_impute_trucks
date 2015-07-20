@@ -3,6 +3,9 @@ parts <- c('wim','wim','impute','calls')
 rcouchutils::couch.makedb(parts)
 path <- './files'
 output_path <- './files'
+image_path <- paste(path,'images',parts,sep='/',collapse='/')
+print(image_path)
+dir.create(image_path,recursive=TRUE)
 year <- 2012
 maxiter <- 200
 
@@ -42,11 +45,20 @@ test_that(
                                            wim_pairs=wim_pairs,
                                            year=year,
                                            wim_path=path,
-                                           output_path=path,
                                            maxiter=200,
                                            trackingdb=parts)
 
-
+        saved_chain_lengths <-
+            rcouchutils::couch.check.state(year=year,id=cdb_wimid,
+                                           state='vo_imputation_chain_lengths',
+                                           db=parts)
+        saved_max_iterations <-
+            rcouchutils::couch.check.state(year=year,id=cdb_wimid,
+                                           state='vo_imputation_max_iterations',
+                                           db=parts)
+        testthat::expect_more_than(object=mean(saved_chain_lengths),expected=30)
+        testthat::expect_less_than(object=mean(saved_chain_lengths),expected=80)
+        testthat::expect_equal(object=saved_max_iterations,expected=0)
 
         ## content checks
         df.wim.imputed <-
@@ -69,12 +81,48 @@ test_that(
                         equals(summary(df.voimputed.agg[,column])))
         }
 
+        ## now the post imputation stuff...plots and CSV dump
+        result <- post_impute_handling(df.voimputed.agg,
+                                       site_no,site_dir,year,
+                                       plot_path=image_path,
+                                       csv_path=path,
+                                       trackingdb=parts)
+
+        expect_that(result,equals(
+                               paste(path,
+                                     paste('site_no.',
+                                           cdb_wimid,
+                                           '.vo.imputed.2012.csv',
+                                           sep=''),
+                                     sep='/')
+                           ))
+        ## expect that the five post-imputation plots are in couchdb
+        doc <- rcouchutils::couch.get(parts,cdb_wimid)
+        attachments <- doc[['_attachments']]
+        testthat::expect_that(attachments,testthat::is_a('list'))
+        testthat::expect_that(sort(names(attachments)),
+                              testthat::equals(
+                                  c(paste(cdb_wimid,year,
+                                          'imputed_vo',
+                                          c("001.png",
+                                            "002.png",
+                                            "003.png",
+                                            "004.png"),
+                                          sep='_')
+                                    ))
+                              )
+
+
     })
 
 
 
 
-## unlink(paste(path,'/vds_id.',vds_id,'.truck.imputed.',year,'.',c(1,2,3),'.csv',sep=''))
-## unlink(paste(path,'/vds_id.',vds_id,'.truck.imputed.',year,'.csv',sep=''))
-## unlink(paste(path,'/images'),recursive = TRUE)
-## rcouchutils::couch.deletedb(parts)
+unlink(paste(path,
+             paste('site_no.',
+                   cdb_wimid,
+                   '.vo.imputed.2012.csv',
+                   sep=''),
+             sep='/'))
+unlink(image_path <- paste(path,'images',parts[1],sep='/',collapse='/'),recursive = TRUE)
+rcouchutils::couch.deletedb(parts)
