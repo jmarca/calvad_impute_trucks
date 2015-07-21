@@ -22,17 +22,18 @@
   },
   "homepage": "https://github.com/jmarca/calvad_impute_trucks",
   "dependencies": {
-      "calvad_vds_sites": "jmarca/calvad_vds_sites",
-      "calvad_wim_sites": "jmarca/calvad_wim_sites",
-      "calvad_rscripts": "jmarca/calvad_rscripts",
-      "calvad_merge_pairs": "git+ssh://metis.gitolite/calvad_merge_pairs",
-      "rcouchutils":"jmarca/rstats_couch_utils",
-      "configr":"jmarca/configr",
-      "config_okay": "",
-      "couch_check_state": "jmarca/couch_check_state",
-      "lodash": "",
-      "pg": "",
-      "queue-async": ""
+    "calvad_merge_pairs": "git+ssh://metis.gitolite/calvad_merge_pairs",
+    "calvad_rscripts": "jmarca/calvad_rscripts",
+    "calvad_vds_sites": "jmarca/calvad_vds_sites",
+    "calvad_wim_sites": "jmarca/calvad_wim_sites",
+    "config_okay": "",
+    "configr": "jmarca/configr",
+    "couch_check_state": "jmarca/couch_check_state",
+    "lodash": "",
+    "minimist": "^1.1.1",
+    "pg": "",
+    "queue-async": "",
+    "rcouchutils": "jmarca/rstats_couch_utils"
   },
   "devDependencies": {
     "should": "^6.0.3"
