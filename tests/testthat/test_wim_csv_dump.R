@@ -33,15 +33,16 @@ test_that(
     })
 
 test_that(
-    "will dump the imputed WIM if no pair in couchdb",{
+    "will crash when trying to dump the imputed WIM if no pair in couchdb",{
         wim_site <- 37
         wim_dir <- 'S'
         year <- 2012
-        res <- dump.wim.csv(wim_site,wim_dir,year,
-                            wim_path=path,
-                            output_path=output_path,
-                            trackingdb = parts)
-        expect_that(res,equals('./files/csv/wim.37.S.truck.imputed.2012.csv'))
+        expect_error(
+            dump.wim.csv(wim_site,wim_dir,year,
+                         wim_path=path,
+                         output_path=output_path,
+                         trackingdb = parts)
+        )
 
     })
 

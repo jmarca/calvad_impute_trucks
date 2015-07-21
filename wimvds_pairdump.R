@@ -60,13 +60,12 @@ if('' == output_path || is.null(output_path) ||  is.na(output_path)){
 
 print(paste('calling dump.wim.csv with options',
             paste(c(wim_site,wim_dir,year,
-                       wim_path=path,
                        output_path=output_path,
                     trackingdb=config$couchdb$trackingdb
                     ))))
 
 result <- dump.wim.csv(wim_site,wim_dir,year,
-                       wim_path=path,
+                       wim_path='',
                        output_path=output_path,
                        trackingdb = config$couchdb$trackingdb)
 

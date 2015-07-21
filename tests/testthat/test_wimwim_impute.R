@@ -90,9 +90,8 @@ test_that(
 
         expect_that(result,equals(
                                paste(path,
-                                     paste('site_no.',
-                                           cdb_wimid,
-                                           '.vo.imputed.2012.csv',
+                                     paste(cdb_wimid,
+                                           '.truck.imputed.2012.csv',
                                            sep=''),
                                      sep='/')
                            ))
@@ -119,9 +118,8 @@ test_that(
 
 
 unlink(paste(path,
-             paste('site_no.',
-                   cdb_wimid,
-                   '.vo.imputed.2012.csv',
+             paste(cdb_wimid,
+                   '.truck.imputed.2012.csv',
                    sep=''),
              sep='/'))
 unlink(image_path <- paste(path,'images',parts[1],sep='/',collapse='/'),recursive = TRUE)

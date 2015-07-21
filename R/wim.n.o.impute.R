@@ -172,29 +172,10 @@ post_impute_handling <- function(aout.agg,site_no,wim_dir,year,
             rcouchutils::couch.attach(trackingdb,cdb_wimid,f2a)
         }
     }
-
-    aout.agg.l <- calvadrscripts::transpose.lanes.to.rows(aout.agg)
-
-    ## okay, actually write the csv file
-    filename <- paste('site_no',cdb_wimid,'vo.imputed',year,'csv',sep='.')
-    ## don't clobber prior imputations
-    exists <- dir(csv_path,filename)
-    tick <- 0
-    while(length(exists)==1){
-        tick = tick+1
-        filename <- paste('site_no',cdb_wimid,'vo.imputed',year,tick,'csv',sep='.')
-        ## don't overwrite files
-        exists <- dir(csv_path,filename)
-    }
-    file <- paste(csv_path,filename,sep='/')
-
-
     ## aggregate to median, save as CSV, and/or write to couchdb right
     ## here
+    filename <- write_csv(cdb_wimid,year,aout.agg,csv_path,trackingdb)
 
-    write.csv(aout.agg.l,file=file,row.names = FALSE)
-
-
-    return (file)
+    return (filename)
 
 }
