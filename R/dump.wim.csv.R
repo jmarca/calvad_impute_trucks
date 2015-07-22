@@ -47,7 +47,7 @@ dump.wim.csv <- function(wim_site,wim_dir,year,
             df.merged <- df.fake.imputed$imputations[[1]]
         }else{
             print('combining multiple pairings')
-            df.merged <- calvadrscripts::condense.amelia.output(df.fake.imputed)
+            df.merged <- calvadrscripts::condense.amelia.output(df.fake.imputed,op=mean)
             print(summary(df.merged))
         }
     }else{
