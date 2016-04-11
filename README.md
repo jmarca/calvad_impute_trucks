@@ -44,6 +44,3 @@ Once that is set, you should be able to run the imputations by running
 ```
 node trigger_vds_impute_trucks.js
 ```
-
-If I get off my lazy behind, I might set up command line arguments
-like years and such.
