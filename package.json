@@ -22,7 +22,7 @@
   },
   "homepage": "https://github.com/jmarca/calvad_impute_trucks",
   "dependencies": {
-    "calvad_merge_pairs": "ssh//git@metis.its.uci.edu/calvad_merge_pairs",
+    "calvad_merge_pairs": "git+ssh://git@metis.its.uci.edu/calvad_merge_pairs",
     "calvad_rscripts": "jmarca/calvad_rscripts",
     "calvad_vds_sites": "jmarca/calvad_vds_sites",
     "calvad_wim_sites": "jmarca/calvad_wim_sites",
