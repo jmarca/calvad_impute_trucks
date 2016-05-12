@@ -28,7 +28,7 @@ describe('get vds',function(){
                 })
     })
     it('should return an empty list for 2014',function(done){
-        get_vds({'year':2014
+        get_vds({'year':2020
                 ,'config_file':config_file}
                ,function(e,r){
                     should.not.exist(e)
