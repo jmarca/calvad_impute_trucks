@@ -66,6 +66,7 @@ impute.vds.site <- function(vds_id,wim_pairs,year,
     df.vds[,'vds_id'] <- vds_id
 
     print(summary(df.vds))
+    print(dim(df.vds))
     ## pick off the lane names so as to drop irrelevant lanes in the loop below
     vds.names <- names(df.vds)
 
@@ -176,7 +177,24 @@ impute.vds.site <- function(vds_id,wim_pairs,year,
                                                  ,subhead='\nVDS site imputed trucks'
                                                  ,force.plot=force.plot
                                                  ,trackingdb=trackingdb
+                                                 ,wim.path = output_path
                                                   )
+
+    if(length(attach.files) != 1){
+        for(f2a in c(attach.files)){
+            rcouchutils::couch.attach(trackingdb,vds_id,f2a)
+        }
+    }
+
+    attach.files <- calvadrscripts::plot_vds.data(df.merged=df.agg.amelia,
+                                                  vdsid = vds_id,
+                                                  year=year,
+                                                  fileprefix='vdstruckimpute',
+                                                  subhead = '\nVDS site imputed trucks',
+                                                  force.plot=force.plot,
+                                                  path=vds_path,
+                                                  trackingdb = trackingdb)
+
     if(length(attach.files) != 1){
         for(f2a in c(attach.files)){
             rcouchutils::couch.attach(trackingdb,vds_id,f2a)
