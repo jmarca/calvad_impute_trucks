@@ -29,6 +29,7 @@ dump.wim.csv <- function(wim_site,wim_dir,year,
                                               trackingdb=trackingdb)
     df.merged <- NULL
     print(paste(possible.pairing))
+    bigdata <- data.frame()
     if(dim(possible.pairing)[1] > 0){
         print('get from couchdb')
         df.fake.imputed <- list()
@@ -40,9 +41,24 @@ dump.wim.csv <- function(wim_site,wim_dir,year,
                                                         docname=vds_id,
                                                         attachment = att_doc)
             nm <- names(result)[1]
-            df.fake.imputed$imputations[[idx]] <- result[[1]][[nm]]
-            print(summary(df.fake.imputed$imputations[[idx]]))
+            df.temp <- result[[1]][[nm]]
+            ## check if anything is missing (due to dropping low VDS data)
+            any.missing <- c(is.na(df.temp))
+            if(length(any.missing[any.missing])>0){
+                ## something is missing, run amelia
+                df.temp$vds_id <- vds_id
+                big.amelia <- fill.truck.gaps(df.temp,maxiter=50)
+                df.fake.imputed$imputations[[idx]] <- calvadrscripts::condense.amelia.output(big.amelia,op=median)
+                df.fake.imputed$imputations[[idx]]['vds_id'] <- NULL
+            }else{
+                df.fake.imputed$imputations[[idx]] <- df.temp
+            }
+            if('numericts' %in% names(df.fake.imputed$imputations[[idx]])){
+                df.fake.imputed$imputations[[idx]]['numericts'] <- NULL
+            }
+            print(names(df.fake.imputed$imputations[[idx]]))
         }
+
         if(length(possible.pairing$vds_id) == 1){
             df.merged <- df.fake.imputed$imputations[[1]]
         }else{
