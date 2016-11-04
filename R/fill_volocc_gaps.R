@@ -30,7 +30,7 @@ fill.vo.gaps <- function(df
                             ,maxiter=200
                             ){
 
-    ## truncate negative values to zero
+    ## truncate negative values to zero.  Not likely to be needed
     negatives <-  !( df>=0 | is.na(df) )
     df[negatives] <- 0
 
